@@ -1,0 +1,157 @@
+//#############################################################################
+//
+// FILE:   vienna_clatask.cla
+//
+// TITLE:  CLA Task file
+//
+//#############################################################################
+// $TI Release: TIDM_1000 v4.01.01.00 $
+// $Release Date: Tue Nov  3 10:37:49 CST 2020 $
+// $Copyright:
+// Copyright (C) 2020 Texas Instruments Incorporated - http://www.ti.com/
+//
+// ALL RIGHTS RESERVED
+// $
+//#############################################################################
+
+#define INTERRUPT_H
+
+#include "vienna.h"
+
+
+//
+// Task 1 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task1 ( void )
+{
+    #if(CLA_DEBUG == 1)
+    __mdebugstop();
+    #endif
+
+    #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
+        //VIENNA_pfcControlCode();
+        ControlCode_PVEmu4();
+//        protections4();
+    #endif
+    #if(CLA_DEBUG == 1)
+        __mdebugstop();
+    #endif
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 2 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task2 ( void )
+{
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 3 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task3 ( void )
+{
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 4 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task4 ( void )
+{
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 5 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task5 ( void )
+{
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 6 - Title Here
+//
+// Description: Description/steps here.
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task6 ( void )
+{
+
+}
+
+//
+//-----------------------------------------------------------------------------
+//
+// Task 7 - One Time Initialization Task
+//
+// Description:
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt))  void Cla1Task7 ( void )
+{
+
+}
+
+
+
+//
+//-----------------------------------------------------------------------------
+//
+// Background Task
+//
+// Description:
+//
+//-----------------------------------------------------------------------------
+//
+__attribute__((interrupt("background")))  void Cla1BackgroundTask ( void )
+{
+    #if(CLA_DEBUG == 1)
+    __mdebugstop();
+    #endif
+    #if VIENNA_INSTRUMENTATION_ISR_RUNNING_ON == CLA_CORE
+        //VIENNA_instrumentationCode();
+        protections4();
+    #endif
+    #if(CLA_DEBUG == 1)
+    __mdebugstop();
+    #endif
+}
+
+//
+// End of File
+//
