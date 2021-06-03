@@ -722,7 +722,6 @@ static inline void Idle_State14(void)
     }
 }
 
-
 #pragma FUNC_ALWAYS_INLINE(Slew_Control14)
 static inline void Slew_Control14(void)
 {
@@ -758,7 +757,6 @@ static inline void buck1_current_control4(void)
     else if(il1_control_controlout < update_const_lower_limit_il1_controlout) il1_control_controlout = update_const_lower_limit_il1_controlout;
     common_vars_duty1 = il1_control_controlout;
 }
-
 
 #pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control4)
 static inline void buck1pv_voltage_control4(void)
@@ -1001,7 +999,6 @@ static inline void ControlCode_PVEmu4(void)
     VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
 
 }
-
 
 #pragma FUNC_ALWAYS_INLINE(protections4)
 static inline void protections4(void)
