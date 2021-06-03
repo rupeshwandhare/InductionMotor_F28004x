@@ -759,6 +759,7 @@ static inline void buck1_current_control4(void)
     common_vars_duty1 = il1_control_controlout;
 }
 
+
 #pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control4)
 static inline void buck1pv_voltage_control4(void)
 {
