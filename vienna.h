@@ -669,8 +669,8 @@ static inline void clearPWMTrip(void)
 }
 
 //==============-------------
-#pragma FUNC_ALWAYS_INLINE(Vdc_Charging4)
-static inline void Vdc_Charging4(void)
+#pragma FUNC_ALWAYS_INLINE(Vdc_Charging)
+static inline void Vdc_Charging(void)
 {
     //Display_screen  "Preparing"  //make it to run only one time
 
@@ -701,8 +701,8 @@ static inline void Vdc_Charging4(void)
 
 }
 
-#pragma FUNC_ALWAYS_INLINE(Idle_State14)
-static inline void Idle_State14(void)
+#pragma FUNC_ALWAYS_INLINE(Idle_State1)
+static inline void Idle_State1(void)
 {
 /*    if (!DisablePWM) DisablePWM = SET;*/
     setDISABLE_PWM();
@@ -722,8 +722,8 @@ static inline void Idle_State14(void)
     }
 }
 
-#pragma FUNC_ALWAYS_INLINE(Slew_Control14)
-static inline void Slew_Control14(void)
+#pragma FUNC_ALWAYS_INLINE(Slew_Control1)
+static inline void Slew_Control1(void)
 {
     clearPWMTrip();
     common_vars_duty1 =common_vars_duty1+update_const_slew_rate1;
@@ -740,8 +740,8 @@ static inline void Slew_Control14(void)
     }
 }
 
-#pragma FUNC_ALWAYS_INLINE(buck1_current_control4)
-static inline void buck1_current_control4(void)
+#pragma FUNC_ALWAYS_INLINE(buck1_current_control)
+static inline void buck1_current_control(void)
 {
     il1_control_ref = vpv1_control_controlout;
     il1_control_error = il1_control_ref - VIENNA_iL1Meas_pu;
@@ -758,8 +758,8 @@ static inline void buck1_current_control4(void)
     common_vars_duty1 = il1_control_controlout;
 }
 
-#pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control4)
-static inline void buck1pv_voltage_control4(void)
+#pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control)
+static inline void buck1pv_voltage_control(void)
 {
     common_vars_vpv1_ref = 100.0; //FOR TESTING ONLY
     vpv1_control_ref = common_vars_vpv1_ref;
@@ -775,8 +775,8 @@ static inline void buck1pv_voltage_control4(void)
     else if(vpv1_control_controlout < update_const_lower_limit_vpv1_controlout) vpv1_control_controlout = update_const_lower_limit_vpv1_controlout;
 }
 
-#pragma FUNC_ALWAYS_INLINE(vpv_ref1_generation4)
-static inline void vpv_ref1_generation4(void)
+#pragma FUNC_ALWAYS_INLINE(vpv_ref1_generation)
+static inline void vpv_ref1_generation(void)
 {
     update_const_ipv1_ref_isc = 20.0;
     update_const_vpv1_ref_vsc = 0.0;
@@ -802,12 +802,12 @@ static inline void vpv_ref1_generation4(void)
     }
 }
 
-#pragma FUNC_ALWAYS_INLINE(Vpv_Control14)
-static inline void Vpv_Control14(void)
+#pragma FUNC_ALWAYS_INLINE(Vpv_Control1)
+static inline void Vpv_Control1(void)
 {   //vpv control takes 3.6usec
-    buck1_current_control4();
-    buck1pv_voltage_control4();
-    vpv_ref1_generation4();
+    buck1_current_control();
+    buck1pv_voltage_control();
+    vpv_ref1_generation();
 //    clearPWMTrip();
 
 //    common_vars.duty1 = 0.01*(float)Constant;//FOR TESTING ONLY
@@ -819,8 +819,8 @@ static inline void Vpv_Control14(void)
     }
 }
 
-#pragma FUNC_ALWAYS_INLINE(Deacceleration14)
-static inline void Deacceleration14(void)
+#pragma FUNC_ALWAYS_INLINE(Deacceleration1)
+static inline void Deacceleration1(void)
 {
     common_vars_duty1 = common_vars_duty1-update_const_deacceleration_rate;
 
@@ -833,8 +833,8 @@ static inline void Deacceleration14(void)
     }
 }
 
-#pragma FUNC_ALWAYS_INLINE(Fault_State4)
-static inline void Fault_State4(void)
+#pragma FUNC_ALWAYS_INLINE(Fault_State)
+static inline void Fault_State(void)
 {
 /*
     //Disable PWM
@@ -865,8 +865,8 @@ static inline void Fault_State4(void)
 */
 }
 
-#pragma FUNC_ALWAYS_INLINE(readCurrVolADCSignals4)
-static inline void readCurrVolADCSignals4(void)
+#pragma FUNC_ALWAYS_INLINE(readCurrVolADCSignals)
+static inline void readCurrVolADCSignals(void)
 {
     VIENNA_iL1Meas_pu = (((float32_t)(VIENNA_IL1_FB_1 + VIENNA_IL1_FB_2 +
             VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4)) *
@@ -913,58 +913,58 @@ static inline void readCurrVolADCSignals4(void)
 
 }
 
-#pragma FUNC_ALWAYS_INLINE(filter_vpv14)
-static inline void filter_vpv14(void)  //vpv filtering
+#pragma FUNC_ALWAYS_INLINE(filter_vpv1)
+static inline void filter_vpv1(void)  //vpv filtering
 {
     sensor_v_pv1_fltr = 0.2283* sensor_v_pv1_fltr+ 0.3859* (VIENNA_vPV1Meas_pu + sensor_v_pv1_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
     sensor_v_pv1_prev = VIENNA_vPV1Meas_pu;
 }
 
-#pragma FUNC_ALWAYS_INLINE(filter_ipv14)
-static inline void filter_ipv14(void)  //vpv filtering
+#pragma FUNC_ALWAYS_INLINE(filter_ipv1)
+static inline void filter_ipv1(void)  //vpv filtering
 {
     sensor_i_pv1_fltr = 0.2283* sensor_i_pv1_fltr+ 0.3859* (VIENNA_iPV1Meas_pu + sensor_i_pv1_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
     sensor_i_pv1_prev = VIENNA_iPV1Meas_pu;
 }
 
-#pragma FUNC_ALWAYS_INLINE(filter_signals4)
-static inline void filter_signals4(void)
+#pragma FUNC_ALWAYS_INLINE(filter_signals)
+static inline void filter_signals(void)
 {
 //    filter_vdc();
-    filter_vpv14();
-    filter_ipv14();
+    filter_vpv1();
+    filter_ipv1();
 }
 
-#pragma FUNC_ALWAYS_INLINE(ControlCode_PVEmu4)
-static inline void ControlCode_PVEmu4(void)
+#pragma FUNC_ALWAYS_INLINE(ControlCode_PVEmu)
+static inline void ControlCode_PVEmu(void)
 {
     uint16_t duty1;
     toggleTimeCheck();
-    readCurrVolADCSignals4();    //It takes 2.5usec
+    readCurrVolADCSignals();    //It takes 2.5usec
 //    VIENNA_readCurrVolADCSignals();
-    filter_signals4();
+    filter_signals();
 
 //        (*PowerControl_State_Ptr1)();   // jump to an Alpha state (void Monitor_Vdc,Idle_State,Slew_Control,Vpv_Control)
 
 
     switch (CONTROL_STATE) {    //switch-case adding 0.4usec to vpv_control1;
         case VPV_CONTROL1:
-            Vpv_Control14();
+            Vpv_Control1();
             break;
         case VDC_CHARGING:
-            Vdc_Charging4();
+            Vdc_Charging();
             break;
         case SLEW_CONTROL1:
-            Slew_Control14();
+            Slew_Control1();
             break;
         case IDLE_STATE1:
-            Idle_State14();
+            Idle_State1();
             break;
         case DEACCELERATION1:
-            Deacceleration14();
+            Deacceleration1();
             break;
         case FAULT_STATE:
-            Fault_State4();
+            Fault_State();
              break;
         default:
             break;
@@ -1000,8 +1000,8 @@ static inline void ControlCode_PVEmu4(void)
 
 }
 
-#pragma FUNC_ALWAYS_INLINE(protections4)
-static inline void protections4(void)
+#pragma FUNC_ALWAYS_INLINE(protections)
+static inline void protections(void)
 {
 #if VIENNA_INSTRUMENTATION_ISR_RUNNING_ON == C28x_CORE
     EINT;

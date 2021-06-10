@@ -471,7 +471,7 @@ void main(void)
 #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
     interrupt void ISR1(void)
     {
-        ControlCode_PVEmu4();
+        ControlCode_PVEmu();
         //VIENNA_pfcControlCode();
         VIENNA_HAL_clearInterrupt(VIENNA_C28x_ISR1_INTERRUPT_PIE_GROUP_NO);
     }// control ISR Ends Here
@@ -483,7 +483,7 @@ void main(void)
 #if VIENNA_INSTRUMENTATION_ISR_RUNNING_ON == C28x_CORE
     interrupt void ISR2(void)
     {
-        protections4();
+        protections();
 //        VIENNA_instrumentationCode();
      }// 10Khz ISR Ends Here
 #endif

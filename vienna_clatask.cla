@@ -34,7 +34,7 @@ __attribute__((interrupt))  void Cla1Task1 ( void )
 
     #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
         //VIENNA_pfcControlCode();
-        ControlCode_PVEmu4();
+        ControlCode_PVEmu();
 //        protections4();
     #endif
     #if(CLA_DEBUG == 1)
@@ -145,7 +145,7 @@ __attribute__((interrupt("background")))  void Cla1BackgroundTask ( void )
     #endif
     #if VIENNA_INSTRUMENTATION_ISR_RUNNING_ON == CLA_CORE
         //VIENNA_instrumentationCode();
-        protections4();
+        protections();
     #endif
     #if(CLA_DEBUG == 1)
     __mdebugstop();
