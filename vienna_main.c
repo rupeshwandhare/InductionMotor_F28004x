@@ -205,10 +205,12 @@ Uint16 Command_PwD=0;
 
 Uint16 PasswordConst = 0;
 
+float Dis_Constant;
 Uint16 ID_Const=0;
 float Constant=0.0;
+volatile float32_t *Ptr_Constant;
 
-unsigned int x_int, x_deca, x_hecto, x_kelo;
+unsigned int x_int, x_deca, x_hecto, x_kelo, x_10kelo, x_100kelo, x_mega, x_10mega;
 
 void StateControl_RemoteScreen(void);
 
@@ -229,6 +231,8 @@ struct COMMAND {
 
 struct COMMAND command=COMMAND_DEFAULTS;
 
+void pickup_constant(void);
+long int Decimizer[]={1000, 1000,   1000,   1000,   1,  1,  1,  1,  100,    100,    100,    100,    10000,  10000,  10000,  10000,  10, 10, 10, 10, 10, 10, 10, 10, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1000000,    1,  100,    1000000,    1,  100,    1,  1000000,    1,  1,  1,  1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100};
 
 #define PowerRelay  GpioDataRegs.GPADAT.bit.GPIO14
 #define DisablePWM  GpioDataRegs.GPADAT.bit.GPIO22
@@ -1087,14 +1091,26 @@ void LCD_selection(void)
        case SCREEN8R2:
            //char screen8r2text[] =      "Val=            ";
 
-           x_kelo = (unsigned int)((float)(Constant*0.001));
-           x_hecto = (unsigned int)((float)((float)Constant - (float)(x_kelo*1000))* 0.01);
-           x_deca = (unsigned int) ((float)((float)Constant - (float)(x_kelo*1000) - (float)(x_hecto*100))*0.1);
-           x_int =  (unsigned int) ((float)((float)Constant - (float)(x_kelo*1000) - (float)(x_hecto*100) - (float)(x_deca*10)) );
-           screen8r2text[4] = (x_kelo+'0');
-           screen8r2text[5] = (x_hecto+'0');
-           screen8r2text[6] = (x_deca+'0');
-           screen8r2text[7] = (x_int+'0');
+           if (Constant<0.0) Dis_Constant=-Constant;
+           else Dis_Constant=Constant;
+           x_10mega = (unsigned int)((float)(Dis_Constant*0.0000001));
+           x_mega = (unsigned int)((float)((float)Dis_Constant - (float)(x_10mega*10000000))* 0.000001);
+           x_100kelo = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000))*0.00001);
+           x_10kelo = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000) - (float)(x_100kelo*100000))*0.0001);
+           x_kelo = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000) - (float)(x_100kelo*100000)- (float)(x_10kelo*10000) )*0.001 );
+           x_hecto = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000) - (float)(x_100kelo*100000)- (float)(x_10kelo*10000) - (float)(x_kelo*1000) )*0.01 );
+           x_deca = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000) - (float)(x_100kelo*100000)- (float)(x_10kelo*10000) - (float)(x_kelo*1000) - (float)(x_hecto*100))*0.1 );
+           x_int = (unsigned int) ((float)((float)Dis_Constant - (float)(x_10mega*10000000) - (float)(x_mega*1000000) - (float)(x_100kelo*100000)- (float)(x_10kelo*10000) - (float)(x_kelo*1000) - (float)(x_hecto*100) - (float)(x_deca*10)));
+
+
+           screen8r2text[4] = (x_10mega+'0');
+           screen8r2text[5] = (x_mega+'0');
+           screen8r2text[6] = (x_100kelo+'0');
+           screen8r2text[7] = (x_10kelo+'0');
+           screen8r2text[8] = (x_kelo+'0');
+           screen8r2text[9] = (x_hecto+'0');
+           screen8r2text[10] = (x_deca+'0');
+           screen8r2text[11] = (x_int+'0');
 
            string_LCD = screen8r2text;
            New_string = 1;
@@ -1451,6 +1467,8 @@ void remote_key_display_state_machine(void)
 
             Test3=2;
         }
+        pickup_constant();
+        Constant=(*Ptr_Constant)*(float)Decimizer[ID_Const];
     }
 
     else if (UpDownKeyFunc==KeyForChangeofConst) {
@@ -1478,6 +1496,8 @@ void remote_key_display_state_machine(void)
 
             Test3=2;
         }
+
+        *Ptr_Constant = Constant/((float)Decimizer[ID_Const]);
     }
 
 
@@ -1762,6 +1782,230 @@ void StateControl_RemoteScreen(void)
 
         default:
             break;
+    }
+}
+
+//For assigning picking up constant to change THERE IS BETTER WAY (SHORT CODE) IF USED STRUCTURE
+volatile float32_t dummy;
+void pickup_constant(void)
+{
+    switch(ID_Const){
+    case 0:
+        Ptr_Constant = &update_const_k1_PIiL1;
+        break;
+    case 1:
+        Ptr_Constant = &update_const_k2_PIiL1;
+        break;
+    case 2:
+        Ptr_Constant = &update_const_k1_PIiL2;
+        break;
+    case 3:
+        Ptr_Constant = &update_const_k2_PIiL2;
+        break;
+    case 4:
+        Ptr_Constant = &update_const_upper_limit_il1_PIout;
+        break;
+    case 5:
+        Ptr_Constant = &update_const_lower_limit_il1_PIout;
+        break;
+    case 6:
+        Ptr_Constant = &update_const_upper_limit_il2_PIout;
+        break;
+    case 7:
+        Ptr_Constant = &update_const_lower_limit_il2_PIout;
+        break;
+    case 8:
+        Ptr_Constant = &update_const_upper_limit_il1_controlout;
+        break;
+    case 9:
+        Ptr_Constant = &update_const_lower_limit_il1_controlout;
+        break;
+    case 10:
+        Ptr_Constant = &update_const_upper_limit_il2_controlout;
+        break;
+    case 11:
+        Ptr_Constant = &update_const_lower_limit_il2_controlout;
+        break;
+    case 12:
+        Ptr_Constant = &update_const_k1_PIvpv1;
+        break;
+    case 13:
+        Ptr_Constant = &update_const_k2_PIvpv1;
+        break;
+    case 14:
+        Ptr_Constant = &update_const_k1_PIvpv2;
+        break;
+    case 15:
+        Ptr_Constant = &update_const_k2_PIvpv2;
+        break;
+    case 16:
+        Ptr_Constant = &update_const_upper_limit_vpv1_PIout;
+        break;
+    case 17:
+        Ptr_Constant = &update_const_lower_limit_vpv1_PIout;
+        break;
+    case 18:
+        Ptr_Constant = &update_const_upper_limit_vpv2_PIout;
+        break;
+    case 19:
+        Ptr_Constant = &update_const_lower_limit_vpv2_PIout;
+        break;
+    case 20:
+        Ptr_Constant = &update_const_upper_limit_vpv1_controlout;
+        break;
+    case 21:
+        Ptr_Constant = &update_const_lower_limit_vpv1_controlout;
+        break;
+    case 22:
+        Ptr_Constant = &update_const_upper_limit_vpv2_controlout;
+        break;
+    case 23:
+        Ptr_Constant = &update_const_lower_limit_vpv2_controlout;
+        break;
+    case 24:
+        Ptr_Constant = &update_const_ipv1_ref_isc;
+        break;
+    case 25:
+        Ptr_Constant = &update_const_vpv1_ref_vsc;
+        break;
+    case 26:
+        Ptr_Constant = &update_const_vpv1_ref_voc;
+        break;
+    case 27:
+        Ptr_Constant = &update_const_ipv1_ref_imp;
+        break;
+    case 28:
+        Ptr_Constant = &update_const_slop1_vpv1_ref_gen;
+        break;
+    case 29:
+        Ptr_Constant = &update_const_constant1_vpv1_ref_gen;
+        break;
+    case 30:
+        Ptr_Constant = &update_const_slop2_vpv1_ref_gen;
+        break;
+    case 31:
+        Ptr_Constant = &update_const_constant2_vpv1_ref_gen;
+        break;
+    case 32:
+        Ptr_Constant = &update_const_ipv2_ref_isc;
+        break;
+    case 33:
+        Ptr_Constant = &update_const_vpv2_ref_vsc;
+        break;
+    case 34:
+        Ptr_Constant = &update_const_vpv2_ref_voc;
+        break;
+    case 35:
+        Ptr_Constant = &update_const_ipv2_ref_imp;
+        break;
+    case 36:
+        Ptr_Constant = &update_const_slop1_vpv2_ref_gen;
+        break;
+    case 37:
+        Ptr_Constant = &update_const_constant1_vpv2_ref_gen;
+        break;
+    case 38:
+        Ptr_Constant = &update_const_slop2_vpv2_ref_gen;
+        break;
+    case 39:
+        Ptr_Constant = &update_const_constant2_vpv2_ref_gen;
+        break;
+    case 40:
+        Ptr_Constant = &update_const_slew_rate1;
+        break;
+    case 41:
+        Ptr_Constant = &update_const_vpv1_threshold_slew_to_vpvcontrol;
+        break;
+    case 42:
+        Ptr_Constant = &update_const_duty1_threshold_slew_to_vpvcontrol;
+        break;
+    case 43:
+        Ptr_Constant = &update_const_slew_rate2;
+        break;
+    case 44:
+        Ptr_Constant = &update_const_vpv2_threshold_slew_to_vpvcontrol;
+        break;
+    case 45:
+        Ptr_Constant = &update_const_duty2_threshold_slew_to_vpvcontrol;
+        break;
+    case 46:
+        Ptr_Constant = &update_const_vdc_threshold_charging_to_idle;
+        break;
+    case 47:
+        Ptr_Constant = &update_const_deacceleration_rate;
+        break;
+    case 48:
+        Ptr_Constant = &update_const_upper_duty_threshold;
+        break;
+    case 49:
+        Ptr_Constant = &Select_PVcurve1;
+        break;
+    case 50:
+        Ptr_Constant = &Select_PVcurve2;
+        break;
+    case 51:
+        Ptr_Constant = &vpv_ref1;
+        break;
+    case 52:
+        Ptr_Constant = &Temp1;
+        break;
+    case 53:
+        Ptr_Constant = &BetaV1;
+        break;
+    case 54:
+        Ptr_Constant = &Ns1;
+        break;
+    case 55:
+        Ptr_Constant = &Np1;
+        break;
+    case 56:
+        Ptr_Constant = &ILight1;
+        break;
+    case 57:
+        Ptr_Constant = &ipv1;
+        break;
+    case 58:
+        Ptr_Constant = &Np1;
+        break;
+    case 59:
+        Ptr_Constant = &Io1;
+        break;
+    case 60:
+        Ptr_Constant = &Rs1;
+        break;
+    case 61:
+        Ptr_Constant = &vpv_ref2;
+        break;
+    case 62:
+        Ptr_Constant = &Temp2;
+        break;
+    case 63:
+        Ptr_Constant = &BetaV2;
+        break;
+    case 64:
+        Ptr_Constant = &Ns2;
+        break;
+    case 65:
+        Ptr_Constant = &Np2;
+        break;
+    case 66:
+        Ptr_Constant = &ILight2;
+        break;
+    case 67:
+        Ptr_Constant = &ipv2;
+        break;
+    case 68:
+        Ptr_Constant = &Np2;
+        break;
+    case 69:
+        Ptr_Constant = &Io2;
+        break;
+    case 70:
+        Ptr_Constant = &Rs2;
+        break;
+    default:
+        Ptr_Constant = &dummy;
+        break;
     }
 }
 

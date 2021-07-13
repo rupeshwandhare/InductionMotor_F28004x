@@ -198,6 +198,7 @@ enum VIENNA_boardState_enum VIENNA_boardState = PowerStageOFF;
 volatile uint16_t VIENNA_boardStatus=1;
 
 volatile uint16_t CONTROL_STATE=0;
+volatile uint16_t CONTROL_STATE2=0;
 
 //---
 //struct COMMON_VARS {
@@ -368,7 +369,32 @@ volatile uint16_t CONTROL_STATE=0;
     volatile uint32_t count_charging4;
     volatile uint32_t testing_variable;
 
-
+volatile float32_t Select_PVcurve1=0;
+volatile float32_t Select_PVcurve2=0;
+volatile float32_t vpv_ref1;
+volatile float32_t Temp1;
+volatile float32_t BetaV1;
+volatile float32_t Ns1;
+volatile float32_t Np1;
+volatile float32_t ILight1;
+volatile float32_t ipv1;
+volatile float32_t Np1;
+volatile float32_t Io1;
+volatile float32_t Rs1;
+volatile float32_t Nscell1;
+volatile float32_t ppv_ref1;
+volatile float32_t vpv_ref2;
+volatile float32_t Temp2;
+volatile float32_t BetaV2;
+volatile float32_t Ns2;
+volatile float32_t Np2;
+volatile float32_t ILight2;
+volatile float32_t ipv2;
+volatile float32_t Np2;
+volatile float32_t Io2;
+volatile float32_t Rs2;
+volatile float32_t Nscell2;
+volatile float32_t ppv_ref2;
 //---
 
 #pragma SET_DATA_SECTION()
@@ -773,6 +799,29 @@ void initGlobalVariable(void)
     count_charging4 = 0;
 
     common_flag_init_GlobalVariable = 0;
+ 
+    Select_PVcurve1 = 2;
+    Io1= 0.0000000001; //9.96*10^(-11);
+    ILight1=9.04;
+    Rs1 = 0.5;//0.219;
+    vpv_ref1=0;
+    ipv1=0;
+    Np1=1;
+    Ns1=8;
+    BetaV1 = 0.40;
+    Temp1 = 30;//50;
+    
+    Select_PVcurve2 = 0;
+    Io2= 0.0000000001; //9.96*10^(-11);
+    ILight2=9.04;
+    Rs2 = 0.5;//0.219;
+    vpv_ref2=0;
+    ipv2=0;
+    Np2=1;
+    Ns2=8;
+    BetaV2 = 0.40;
+    Temp2 = 30;//50;    
+    
 }
 
 

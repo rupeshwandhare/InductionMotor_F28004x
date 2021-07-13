@@ -327,6 +327,7 @@ extern enum VIENNA_boardState_enum VIENNA_boardState;
 
 enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEACCELERATION1=4, IDLE_STATE2=5, SLEW_CONTROL2=6, VPV_CONTROL2=7, DEACCELERATION2=8, FAULT_STATE=9};
 
+
 //struct COMMON_VARS {
     extern volatile float32_t common_vars_vpv1_ref;
     extern volatile float32_t common_vars_vpv2_ref;
@@ -486,10 +487,44 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile uint16_t command_Clear_OCfault;
 
     extern volatile uint16_t CONTROL_STATE;
+    extern volatile uint16_t CONTROL_STATE2;
     extern volatile uint32_t count_charging4;
     extern volatile uint16_t common_flag_init_GlobalVariable;
     extern volatile uint32_t testing_variable;
     extern volatile uint16_t VIENNA_boardStatus;
+
+    enum PVcurvesCh1 {Ch1Isc20Voc360Ipv16=0, Ch1P300Ns8Np2Bv045=1, Ch1P300Ns8Np1Bv045=2, Ch1P300Ns9Np2Bv045=3, Ch1P300Ns9Np1Bv045=4, Ch1P300Ns10Np2Bv045=5, Ch1P300Ns10Np1Bv045=6, Ch1P300Ns11Np2Bv045=7, Ch1P300Ns11Np1Bv045=8, Ch1P300Ns12Np2Bv045=9, Ch1P300Ns12Np1Bv045=10};
+    enum PVcurvesCh2 {Ch2Isc20Voc360Ipv16=0, Ch2P300Ns8Np2Bv045=1, Ch2P300Ns8Np1Bv045=2, Ch2P300Ns9Np2Bv045=3, Ch2P300Ns9Np1Bv045=4, Ch2P300Ns10Np2Bv045=5, Ch2P300Ns10Np1Bv045=6, Ch2P300Ns11Np2Bv045=7, Ch2P300Ns11Np1Bv045=8, Ch2P300Ns12Np2Bv045=9, Ch2P300Ns12Np1Bv045=10};
+
+    extern volatile float32_t Select_PVcurve1;
+    extern volatile float32_t Select_PVcurve2;
+
+    extern volatile float32_t vpv_ref1;
+    extern volatile float32_t Temp1;
+    extern volatile float32_t BetaV1;
+    extern volatile float32_t Ns1;
+    extern volatile float32_t Np1;
+    extern volatile float32_t ILight1;
+    extern volatile float32_t ipv1;
+    extern volatile float32_t Np1;
+    extern volatile float32_t Io1;
+    extern volatile float32_t Rs1;
+    extern volatile float32_t Nscell1;
+    extern volatile float32_t ppv_ref1;
+
+    extern volatile float32_t vpv_ref2;
+    extern volatile float32_t Temp2;
+    extern volatile float32_t BetaV2;
+    extern volatile float32_t Ns2;
+    extern volatile float32_t Np2;
+    extern volatile float32_t ILight2;
+    extern volatile float32_t ipv2;
+    extern volatile float32_t Np2;
+    extern volatile float32_t Io2;
+    extern volatile float32_t Rs2;
+    extern volatile float32_t Nscell2;
+    extern volatile float32_t ppv_ref2;
+
 
 //---
 
@@ -693,6 +728,7 @@ static inline void Vdc_Charging(void)
         //PowerControl_State_Ptr1 = &Idle_State1;
         //PowerControl_State_Ptr2 = &Idle_State2;
         CONTROL_STATE = IDLE_STATE1;
+        CONTROL_STATE2 = IDLE_STATE2;
 
         if (CONTROL_STATE == IDLE_STATE1) {
             testing_variable = 100;
@@ -778,29 +814,95 @@ static inline void buck1pv_voltage_control(void)
 #pragma FUNC_ALWAYS_INLINE(vpv_ref1_generation)
 static inline void vpv_ref1_generation(void)
 {
-    update_const_ipv1_ref_isc = 20.0;
-    update_const_vpv1_ref_vsc = 0.0;
-    update_const_vpv1_ref_voc = 360.0;
-    update_const_ipv1_ref_imp = 16.0;
-    update_const_slop1_vpv1_ref_gen = 65.0;
-    update_const_constant1_vpv1_ref_gen = 1300.0;
-    update_const_slop2_vpv1_ref_gen = 6.25;
-    update_const_constant2_vpv1_ref_gen = 360.0;
+    switch ((uint16_t)Select_PVcurve1) {
+                case Ch1Isc20Voc360Ipv16:
+                    update_const_ipv1_ref_isc = 20.0;
+                    update_const_vpv1_ref_vsc = 0.0;
+                    update_const_vpv1_ref_voc = 360.0;
+                    update_const_ipv1_ref_imp = 16.0;
+                    update_const_slop1_vpv1_ref_gen = 65.0;
+                    update_const_constant1_vpv1_ref_gen = 1300.0;
+                    update_const_slop2_vpv1_ref_gen = 6.25;
+                    update_const_constant2_vpv1_ref_gen = 360.0;
 
 
-    if (sensor_i_pv1_fltr>update_const_ipv1_ref_isc) {
-        common_vars_vpv1_ref = update_const_vpv1_ref_vsc;
+                    if (sensor_i_pv1_fltr>update_const_ipv1_ref_isc) {
+                        common_vars_vpv1_ref = update_const_vpv1_ref_vsc;
+                    }
+                    else if (sensor_i_pv1_fltr<0.0) {
+                        common_vars_vpv1_ref = update_const_vpv1_ref_voc;
+                    }
+                    else if (sensor_i_pv1_fltr>update_const_ipv1_ref_imp) {
+                        common_vars_vpv1_ref = -update_const_slop1_vpv1_ref_gen*sensor_i_pv1_fltr+update_const_constant1_vpv1_ref_gen;
+                    }
+                    else if (sensor_i_pv1_fltr<=update_const_ipv1_ref_imp) {
+                        common_vars_vpv1_ref = -update_const_slop2_vpv1_ref_gen*sensor_i_pv1_fltr+update_const_constant2_vpv1_ref_gen;
+                    }
+                    break;
+                case Ch1P300Ns8Np2Bv045:
+                        Ns1=8;
+                        Np1=2;
+                    break;
+                case Ch1P300Ns8Np1Bv045:
+                        Ns1=8;
+                        Np1=1;
+                    break;
+                case Ch1P300Ns9Np2Bv045:
+                        Ns1=9;
+                        Np1=2;
+                    break;
+                case Ch1P300Ns9Np1Bv045:
+                        Ns1=9;
+                        Np1=1;
+                    break;
+                case Ch1P300Ns10Np2Bv045:
+                        Ns1=10;
+                        Np1=2;
+                    break;
+                case Ch1P300Ns10Np1Bv045:
+                        Ns1=10;
+                        Np1=1;
+                    break;
+                case Ch1P300Ns11Np2Bv045:
+                        Ns1=11;
+                        Np1=2;
+                    break;
+                case Ch1P300Ns11Np1Bv045:
+                        Ns1=11;
+                        Np1=1;
+                    break;
+                default:
+                    break;
     }
-    else if (sensor_i_pv1_fltr<0.0) {
-        common_vars_vpv1_ref = update_const_vpv1_ref_voc;
-    }
-    else if (sensor_i_pv1_fltr>update_const_ipv1_ref_imp) {
-        common_vars_vpv1_ref = -update_const_slop1_vpv1_ref_gen*sensor_i_pv1_fltr+update_const_constant1_vpv1_ref_gen;
-    }
-    else if (sensor_i_pv1_fltr<=update_const_ipv1_ref_imp) {
-        common_vars_vpv1_ref = -update_const_slop2_vpv1_ref_gen*sensor_i_pv1_fltr+update_const_constant2_vpv1_ref_gen;
+
+    if((uint16_t)Select_PVcurve1!=Ch1Isc20Voc360Ipv16) {
+//        ipv1=sensor_i_pv1_fltr;
+
+        if (ipv1>ILight1*Np1) ipv1=ILight1*Np1;
+
+        #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
+        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1) +1  ) - Ns1*Rs1*ipv1 );
+        #endif
+
+        #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
+        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1) +1  ) - Ns1*Rs1*ipv1 );
+        #endif
+
+/*
+        if (vpv_ref1 > ((1-(Temp1-25)*BetaV1/100)*Ns1*45.78)){
+            vpv_ref1 = ((1-(Temp1-25)*BetaV1/100)*Ns1*45.78);
+        }
+*/
+        if (vpv_ref1 > ((1-(Temp1-25)*BetaV1/100)*Ns1*(float32_t)45.78) ){
+            vpv_ref1 = ((1-(Temp1-25)*BetaV1/100)*Ns1*(float32_t)45.78);
+        }
+        if (vpv_ref1<0.0) vpv_ref1=0.0;
+        common_vars_vpv1_ref = vpv_ref1;
+
+        ppv_ref1 = vpv_ref1*ipv1;
     }
 }
+
 
 #pragma FUNC_ALWAYS_INLINE(Vpv_Control1)
 static inline void Vpv_Control1(void)
@@ -833,6 +935,176 @@ static inline void Deacceleration1(void)
     }
 }
 
+#pragma FUNC_ALWAYS_INLINE(Slew_Control2)
+static inline void Slew_Control2(void)
+{
+    clearPWMTrip();
+    common_vars_duty2 =common_vars_duty2+update_const_slew_rate2;
+
+    if ((sensor_v_pv2_fltr > update_const_vpv2_threshold_slew_to_vpvcontrol) || (common_vars_duty2 >= update_const_duty2_threshold_slew_to_vpvcontrol)) {
+        il2_control_ref = il2_control_act;
+        il2_control_error_prev = 0.0;
+        il2_control_PIout = 0.0; //inductor.d_iL = 5600*(pwm.boost_duty - GAIN_1_MINUS_D_BY_VDCO * sensors.v_dc_fltr);  //exact initial value
+        vpv2_control_ref = vpv2_control_act;
+        vpv2_control_error_prev = 0.0;
+        vpv2_control_PIout = 0.0; // ???
+        //PowerControl_State_Ptr1 = &Vpv_Control1;
+        CONTROL_STATE2 = VPV_CONTROL2;
+    }
+}
+
+#pragma FUNC_ALWAYS_INLINE(buck2_current_control)
+static inline void buck2_current_control(void)
+{
+    il2_control_ref = vpv2_control_controlout;
+    il2_control_error = il2_control_ref - VIENNA_iL2Meas_pu;
+//    il2_control.error = 2.0 - VIENNA_iL1Meas_pu; //for TESTING ONLY
+//    il2_control.PIout = il2_control.PIout + update_const.k1_PIiL2 * il2_control.error + update_const.k2_PIiL2 * il2_control.error_prev;
+    il2_control_PIout = il2_control_PIout + update_const_k1_PIiL2 * il2_control_error - update_const_k2_PIiL2 * il2_control_error_prev;
+    if(il2_control_PIout > update_const_upper_limit_il2_PIout) il2_control_PIout = update_const_upper_limit_il2_PIout;
+    else if(il2_control_PIout < update_const_lower_limit_il2_PIout) il2_control_PIout = update_const_lower_limit_il2_PIout;
+    il2_control_error_prev = il2_control_error;
+//    il2_control.controlout = GAIN_R_BY_VDCO * il2_control.PIout + GAIN_1_MINUS_D_BY_VDCO * VIENNA_vDCMeas_pu;
+    il2_control_controlout = ( il2_control_PIout + VIENNA_vPV2Meas_pu ) / VIENNA_vDCMeas_pu;
+    if(il2_control_controlout > update_const_upper_limit_il2_controlout) il2_control_controlout = update_const_upper_limit_il2_controlout;
+    else if(il2_control_controlout < update_const_lower_limit_il2_controlout) il2_control_controlout = update_const_lower_limit_il2_controlout;
+    common_vars_duty2 = il2_control_controlout;
+}
+
+#pragma FUNC_ALWAYS_INLINE(buck2pv_voltage_control)
+static inline void buck2pv_voltage_control(void)
+{
+    common_vars_vpv2_ref = 100.0; //FOR TESTING ONLY
+    vpv2_control_ref = common_vars_vpv2_ref;
+    vpv2_control_error = vpv2_control_ref - VIENNA_vPV2Meas_pu;
+    vpv2_control_PIout = vpv2_control_PIout + update_const_k1_PIvpv2 * vpv2_control_error - update_const_k2_PIvpv2 * vpv2_control_error_prev;
+    if(vpv2_control_PIout > update_const_upper_limit_vpv2_PIout) vpv2_control_PIout = update_const_upper_limit_vpv2_PIout;
+    else if(vpv2_control_PIout < update_const_lower_limit_vpv2_PIout) vpv2_control_PIout = update_const_lower_limit_vpv2_PIout;
+    vpv2_control_error_prev = vpv2_control_error;
+//    vpv2_control.controlout = vpv2_control.PIout;
+//    vpv2_control.controlout = VIENNA_iPV2Meas_pu + vpv2_control.PIout;
+    vpv2_control_controlout = sensor_i_pv2_fltr + vpv2_control_PIout;
+    if(vpv2_control_controlout > update_const_upper_limit_vpv2_controlout) vpv2_control_controlout = update_const_upper_limit_vpv2_controlout;
+    else if(vpv2_control_controlout < update_const_lower_limit_vpv2_controlout) vpv2_control_controlout = update_const_lower_limit_vpv2_controlout;
+}
+
+#pragma FUNC_ALWAYS_INLINE(vpv_ref2_generation)
+static inline void vpv_ref2_generation(void)
+{
+    switch ((uint16_t)Select_PVcurve2) {
+                case Ch2Isc20Voc360Ipv16:
+                    update_const_ipv2_ref_isc = 20.0;
+                    update_const_vpv2_ref_vsc = 0.0;
+                    update_const_vpv2_ref_voc = 360.0;
+                    update_const_ipv2_ref_imp = 16.0;
+                    update_const_slop1_vpv2_ref_gen = 65.0;
+                    update_const_constant1_vpv2_ref_gen = 1300.0;
+                    update_const_slop2_vpv2_ref_gen = 6.25;
+                    update_const_constant2_vpv2_ref_gen = 360.0;
+
+
+                    if (sensor_i_pv2_fltr>update_const_ipv2_ref_isc) {
+                        common_vars_vpv2_ref = update_const_vpv2_ref_vsc;
+                    }
+                    else if (sensor_i_pv2_fltr<0.0) {
+                        common_vars_vpv2_ref = update_const_vpv2_ref_voc;
+                    }
+                    else if (sensor_i_pv2_fltr>update_const_ipv2_ref_imp) {
+                        common_vars_vpv2_ref = -update_const_slop1_vpv2_ref_gen*sensor_i_pv2_fltr+update_const_constant1_vpv2_ref_gen;
+                    }
+                    else if (sensor_i_pv2_fltr<=update_const_ipv2_ref_imp) {
+                        common_vars_vpv2_ref = -update_const_slop2_vpv2_ref_gen*sensor_i_pv2_fltr+update_const_constant2_vpv2_ref_gen;
+                    }
+                    break;
+                case Ch2P300Ns8Np2Bv045:
+                        Ns2=8;
+                        Np2=2;
+                    break;
+                case Ch2P300Ns8Np1Bv045:
+                        Ns2=8;
+                        Np2=1;
+                    break;
+                case Ch2P300Ns9Np2Bv045:
+                        Ns2=9;
+                        Np2=2;
+                    break;
+                case Ch2P300Ns9Np1Bv045:
+                        Ns2=9;
+                        Np2=1;
+                    break;
+                case Ch2P300Ns10Np2Bv045:
+                        Ns2=10;
+                        Np2=2;
+                    break;
+                case Ch2P300Ns10Np1Bv045:
+                        Ns2=10;
+                        Np2=1;
+                    break;
+                case Ch2P300Ns11Np2Bv045:
+                        Ns2=11;
+                        Np2=2;
+                    break;
+                case Ch2P300Ns11Np1Bv045:
+                        Ns2=11;
+                        Np2=1;
+                    break;
+                default:
+                    break;
+    }
+
+    if((uint16_t)Select_PVcurve2!=Ch2Isc20Voc360Ipv16) {
+        ipv2=sensor_i_pv2_fltr;
+        if (ipv2>ILight2*Np2) ipv2=ILight2*Np2;
+
+        #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
+        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*logf(  (Np2*ILight2-ipv2) /(Np2*Io2) +1  ) - Ns2*Rs2*ipv2 );
+        #endif
+
+        #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
+        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*log(  (Np2*ILight2-ipv2) /(Np2*Io2) +1  ) - Ns2*Rs2*ipv2 );
+        #endif
+
+        if (vpv_ref2>((1+(Temp2-25)*BetaV2/100)*Ns2*45.78)){
+            vpv_ref2=((1+(Temp2-25)*BetaV2/100)*Ns2*45.78);
+        }
+        if (vpv_ref2<0.0) vpv_ref2=0.0;
+        common_vars_vpv2_ref = vpv_ref2;
+
+        ppv_ref2 = vpv_ref2*ipv2;
+    }
+}
+
+#pragma FUNC_ALWAYS_INLINE(Vpv_Control2)
+static inline void Vpv_Control2(void)
+{   //vpv control takes 3.6usec
+    buck2_current_control();
+    buck2pv_voltage_control();
+    vpv_ref2_generation();
+//    clearPWMTrip();
+
+//    common_vars.duty1 = 0.01*(float)Constant;//FOR TESTING ONLY
+
+
+    if (!command_OnOffCh2) {
+//        PowerControl_State_Ptr2 = &Deacceleration2;
+        CONTROL_STATE2 = DEACCELERATION2;
+    }
+}
+
+#pragma FUNC_ALWAYS_INLINE(Deacceleration2)
+static inline void Deacceleration2(void)
+{
+    common_vars_duty2 = common_vars_duty2-update_const_deacceleration_rate;
+
+    if (common_vars_duty2 <=0.01) {
+        common_vars_duty2 = 0.0;
+        //screen_change to suitable;
+/*        DisablePWM = SET;*/
+        //PowerControl_State_Ptr2 = &Idle_State2;
+        CONTROL_STATE2 = IDLE_STATE2;
+    }
+}
+
 #pragma FUNC_ALWAYS_INLINE(Fault_State)
 static inline void Fault_State(void)
 {
@@ -852,6 +1124,7 @@ static inline void Fault_State(void)
     if(command_Clear_OCfault) {
         common_flag_init_GlobalVariable=1;
         CONTROL_STATE = VDC_CHARGING;
+        CONTROL_STATE2 = VDC_CHARGING;
 
 //        VIENNA_HAL_clearPWMTripFlags(EPWM1_BASE); //For testing only
 //        VIENNA_HAL_clearCMPSSLatchFlags(CMPSS3_BASE); //For testing only using POT
@@ -935,14 +1208,37 @@ static inline void filter_signals(void)
     filter_ipv1();
 }
 
+#pragma FUNC_ALWAYS_INLINE(filter_vpv2)
+static inline void filter_vpv2(void)  //vpv filtering
+{
+    sensor_v_pv2_fltr = 0.2283* sensor_v_pv2_fltr+ 0.3859* (VIENNA_vPV2Meas_pu + sensor_v_pv2_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
+    sensor_v_pv2_prev = VIENNA_vPV2Meas_pu;
+}
+
+#pragma FUNC_ALWAYS_INLINE(filter_ipv2)
+static inline void filter_ipv2(void)  //vpv filtering
+{
+    sensor_i_pv2_fltr = 0.2283* sensor_i_pv2_fltr+ 0.3859* (VIENNA_iPV2Meas_pu + sensor_i_pv2_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
+    sensor_i_pv2_prev = VIENNA_iPV2Meas_pu;
+}
+
+#pragma FUNC_ALWAYS_INLINE(filter_signals2)
+static inline void filter_signals2(void)
+{
+//    filter_vdc();
+    filter_vpv2();
+    filter_ipv2();
+}
+
 #pragma FUNC_ALWAYS_INLINE(ControlCode_PVEmu)
 static inline void ControlCode_PVEmu(void)
 {
-    uint16_t duty1;
+    uint16_t duty1, duty2;
     toggleTimeCheck();
     readCurrVolADCSignals();    //It takes 2.5usec
 //    VIENNA_readCurrVolADCSignals();
     filter_signals();
+    filter_signals2();
 
 //        (*PowerControl_State_Ptr1)();   // jump to an Alpha state (void Monitor_Vdc,Idle_State,Slew_Control,Vpv_Control)
 
@@ -969,6 +1265,9 @@ static inline void ControlCode_PVEmu(void)
         default:
             break;
     }
+
+//ONLY FOR TESTING
+//    vpv_ref1_generation();
 
 // Below CPU/CLA selections and math is working properly
 /*
