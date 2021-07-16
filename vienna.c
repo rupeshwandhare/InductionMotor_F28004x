@@ -395,6 +395,12 @@ volatile float32_t Io2;
 volatile float32_t Rs2;
 volatile float32_t Nscell2;
 volatile float32_t ppv_ref2;
+volatile float32_t vpv_ref1_fltr_prev;
+volatile float32_t vpv_ref1_fltr;
+volatile float32_t vpv_ref2_fltr_prev;
+volatile float32_t vpv_ref2_fltr;
+volatile float32_t k1_Fltr_vpv1n2;
+volatile float32_t k2_Fltr_vpv1n2;
 //---
 
 #pragma SET_DATA_SECTION()
@@ -820,8 +826,12 @@ void initGlobalVariable(void)
     Np2=1;
     Ns2=8;
     BetaV2 = 0.40;
-    Temp2 = 30;//50;    
-    
+    Temp2 = 30;//50;
+    vpv_ref1_fltr_prev = 0;
+    vpv_ref2_fltr_prev = 0;
+
+    k1_Fltr_vpv1n2 = 0.99373647;
+    k2_Fltr_vpv1n2 = 0.00313176265;
 }
 
 

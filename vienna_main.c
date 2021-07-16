@@ -232,7 +232,7 @@ struct COMMAND {
 struct COMMAND command=COMMAND_DEFAULTS;
 
 void pickup_constant(void);
-long int Decimizer[]={1000, 1000,   1000,   1000,   1,  1,  1,  1,  100,    100,    100,    100,    10000,  10000,  10000,  10000,  10, 10, 10, 10, 10, 10, 10, 10, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1000000,    1,  100,    1000000,    1,  100,    1,  1000000,    1,  1,  1,  1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100};
+long int Decimizer[]={1, 1,  1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    10, 10, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1000000,    1,  100,    1000000,    1,  100,    1,  1000000,    1,  1000,   1000,   1000,   1000,   1,  1,  1,  1,  100,    100,    100,    100,    10000,  10000,  10000,  10000,  10, 10, 10, 10, 10, 10, 1000000,    1000000};
 
 #define PowerRelay  GpioDataRegs.GPADAT.bit.GPIO14
 #define DisablePWM  GpioDataRegs.GPADAT.bit.GPIO22
@@ -1791,70 +1791,70 @@ void pickup_constant(void)
 {
     switch(ID_Const){
     case 0:
-        Ptr_Constant = &update_const_k1_PIiL1;
+        Ptr_Constant = &Select_PVcurve1;
         break;
     case 1:
-        Ptr_Constant = &update_const_k2_PIiL1;
+        Ptr_Constant = &Select_PVcurve2;
         break;
     case 2:
-        Ptr_Constant = &update_const_k1_PIiL2;
+        Ptr_Constant = &vpv_ref1;
         break;
     case 3:
-        Ptr_Constant = &update_const_k2_PIiL2;
+        Ptr_Constant = &Temp1;
         break;
     case 4:
-        Ptr_Constant = &update_const_upper_limit_il1_PIout;
+        Ptr_Constant = &BetaV1;
         break;
     case 5:
-        Ptr_Constant = &update_const_lower_limit_il1_PIout;
+        Ptr_Constant = &Ns1;
         break;
     case 6:
-        Ptr_Constant = &update_const_upper_limit_il2_PIout;
+        Ptr_Constant = &Np1;
         break;
     case 7:
-        Ptr_Constant = &update_const_lower_limit_il2_PIout;
+        Ptr_Constant = &ILight1;
         break;
     case 8:
-        Ptr_Constant = &update_const_upper_limit_il1_controlout;
+        Ptr_Constant = &ipv1;
         break;
     case 9:
-        Ptr_Constant = &update_const_lower_limit_il1_controlout;
+        Ptr_Constant = &Np1;
         break;
     case 10:
-        Ptr_Constant = &update_const_upper_limit_il2_controlout;
+        Ptr_Constant = &Io1;
         break;
     case 11:
-        Ptr_Constant = &update_const_lower_limit_il2_controlout;
+        Ptr_Constant = &Rs1;
         break;
     case 12:
-        Ptr_Constant = &update_const_k1_PIvpv1;
+        Ptr_Constant = &vpv_ref2;
         break;
     case 13:
-        Ptr_Constant = &update_const_k2_PIvpv1;
+        Ptr_Constant = &Temp2;
         break;
     case 14:
-        Ptr_Constant = &update_const_k1_PIvpv2;
+        Ptr_Constant = &BetaV2;
         break;
     case 15:
-        Ptr_Constant = &update_const_k2_PIvpv2;
+        Ptr_Constant = &Ns2;
         break;
     case 16:
-        Ptr_Constant = &update_const_upper_limit_vpv1_PIout;
+        Ptr_Constant = &Np2;
         break;
     case 17:
-        Ptr_Constant = &update_const_lower_limit_vpv1_PIout;
+        Ptr_Constant = &ILight2;
         break;
     case 18:
-        Ptr_Constant = &update_const_upper_limit_vpv2_PIout;
+        Ptr_Constant = &ipv2;
         break;
     case 19:
-        Ptr_Constant = &update_const_lower_limit_vpv2_PIout;
+        Ptr_Constant = &Np2;
         break;
     case 20:
-        Ptr_Constant = &update_const_upper_limit_vpv1_controlout;
+        Ptr_Constant = &Io2;
         break;
     case 21:
-        Ptr_Constant = &update_const_lower_limit_vpv1_controlout;
+        Ptr_Constant = &Rs2;
         break;
     case 22:
         Ptr_Constant = &update_const_upper_limit_vpv2_controlout;
@@ -1938,70 +1938,76 @@ void pickup_constant(void)
         Ptr_Constant = &update_const_upper_duty_threshold;
         break;
     case 49:
-        Ptr_Constant = &Select_PVcurve1;
+        Ptr_Constant = &update_const_k1_PIiL1;
         break;
     case 50:
-        Ptr_Constant = &Select_PVcurve2;
+        Ptr_Constant = &update_const_k2_PIiL1;
         break;
     case 51:
-        Ptr_Constant = &vpv_ref1;
+        Ptr_Constant = &update_const_k1_PIiL2;
         break;
     case 52:
-        Ptr_Constant = &Temp1;
+        Ptr_Constant = &update_const_k2_PIiL2;
         break;
     case 53:
-        Ptr_Constant = &BetaV1;
+        Ptr_Constant = &update_const_upper_limit_il1_PIout;
         break;
     case 54:
-        Ptr_Constant = &Ns1;
+        Ptr_Constant = &update_const_lower_limit_il1_PIout;
         break;
     case 55:
-        Ptr_Constant = &Np1;
+        Ptr_Constant = &update_const_upper_limit_il2_PIout;
         break;
     case 56:
-        Ptr_Constant = &ILight1;
+        Ptr_Constant = &update_const_lower_limit_il2_PIout;
         break;
     case 57:
-        Ptr_Constant = &ipv1;
+        Ptr_Constant = &update_const_upper_limit_il1_controlout;
         break;
     case 58:
-        Ptr_Constant = &Np1;
+        Ptr_Constant = &update_const_lower_limit_il1_controlout;
         break;
     case 59:
-        Ptr_Constant = &Io1;
+        Ptr_Constant = &update_const_upper_limit_il2_controlout;
         break;
     case 60:
-        Ptr_Constant = &Rs1;
+        Ptr_Constant = &update_const_lower_limit_il2_controlout;
         break;
     case 61:
-        Ptr_Constant = &vpv_ref2;
+        Ptr_Constant = &update_const_k1_PIvpv1;
         break;
     case 62:
-        Ptr_Constant = &Temp2;
+        Ptr_Constant = &update_const_k2_PIvpv1;
         break;
     case 63:
-        Ptr_Constant = &BetaV2;
+        Ptr_Constant = &update_const_k1_PIvpv2;
         break;
     case 64:
-        Ptr_Constant = &Ns2;
+        Ptr_Constant = &update_const_k2_PIvpv2;
         break;
     case 65:
-        Ptr_Constant = &Np2;
+        Ptr_Constant = &update_const_upper_limit_vpv1_PIout;
         break;
     case 66:
-        Ptr_Constant = &ILight2;
+        Ptr_Constant = &update_const_lower_limit_vpv1_PIout;
         break;
     case 67:
-        Ptr_Constant = &ipv2;
+        Ptr_Constant = &update_const_upper_limit_vpv2_PIout;
         break;
     case 68:
-        Ptr_Constant = &Np2;
+        Ptr_Constant = &update_const_lower_limit_vpv2_PIout;
         break;
     case 69:
-        Ptr_Constant = &Io2;
+        Ptr_Constant = &update_const_upper_limit_vpv1_controlout;
         break;
     case 70:
-        Ptr_Constant = &Rs2;
+        Ptr_Constant = &update_const_lower_limit_vpv1_controlout;
+        break;
+    case 71:
+        Ptr_Constant = &k1_Fltr_vpv1n2;
+        break;
+    case 72:
+        Ptr_Constant = &k2_Fltr_vpv1n2;
         break;
     default:
         Ptr_Constant = &dummy;

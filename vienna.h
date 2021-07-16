@@ -436,6 +436,8 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile float32_t update_const_vdc_threshold_charging_to_idle;
     extern volatile float32_t update_const_deacceleration_rate;
     extern volatile float32_t update_const_upper_duty_threshold;
+    extern volatile float32_t k1_Fltr_vpv1n2;
+    extern volatile float32_t k2_Fltr_vpv1n2;
 
 //};
 //#define UPDATE_CONST_DEFAULTS {31.44,   31.39,  31.44,  31.39,  100,    -100,   100,    -100,   0.7,    0.01,   0.7,    0.01,   0.2364, 0.2349, 0.2364, 0.2349, 25, -25,    25, -25,    25, -25,    25, -25,    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0.00002,    112,    0.2,    0.00002,    112,    0.2,    500,    0.00002,    0}
@@ -524,7 +526,10 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile float32_t Rs2;
     extern volatile float32_t Nscell2;
     extern volatile float32_t ppv_ref2;
-
+    extern volatile float32_t vpv_ref1_fltr_prev;
+    extern volatile float32_t vpv_ref1_fltr;
+    extern volatile float32_t vpv_ref2_fltr_prev;
+    extern volatile float32_t vpv_ref2_fltr;
 
 //---
 
@@ -797,7 +802,7 @@ static inline void buck1_current_control(void)
 #pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control)
 static inline void buck1pv_voltage_control(void)
 {
-    common_vars_vpv1_ref = 100.0; //FOR TESTING ONLY
+//    common_vars_vpv1_ref = 100.0; //FOR TESTING ONLY
     vpv1_control_ref = common_vars_vpv1_ref;
     vpv1_control_error = vpv1_control_ref - VIENNA_vPV1Meas_pu;
     vpv1_control_PIout = vpv1_control_PIout + update_const_k1_PIvpv1 * vpv1_control_error - update_const_k2_PIvpv1 * vpv1_control_error_prev;
@@ -876,7 +881,7 @@ static inline void vpv_ref1_generation(void)
     }
 
     if((uint16_t)Select_PVcurve1!=Ch1Isc20Voc360Ipv16) {
-//        ipv1=sensor_i_pv1_fltr;
+        ipv1=sensor_i_pv1_fltr;
 
         if (ipv1>ILight1*Np1) ipv1=ILight1*Np1;
 
@@ -897,10 +902,12 @@ static inline void vpv_ref1_generation(void)
             vpv_ref1 = ((1-(Temp1-25)*BetaV1/100)*Ns1*(float32_t)45.78);
         }
         if (vpv_ref1<0.0) vpv_ref1=0.0;
-        common_vars_vpv1_ref = vpv_ref1;
-
-        ppv_ref1 = vpv_ref1*ipv1;
     }
+    vpv_ref1_fltr = k1_Fltr_vpv1n2 * vpv_ref1_fltr+ k2_Fltr_vpv1n2 * (vpv_ref1 + vpv_ref1_fltr_prev); //Tf=1/(2pi50) 50=fsw/(10x10x10)
+    vpv_ref1_fltr_prev = vpv_ref1_fltr;
+
+    common_vars_vpv1_ref = vpv_ref1_fltr;
+    ppv_ref1 = vpv_ref1_fltr*ipv1;
 }
 
 
@@ -1068,10 +1075,12 @@ static inline void vpv_ref2_generation(void)
             vpv_ref2=((1+(Temp2-25)*BetaV2/100)*Ns2*45.78);
         }
         if (vpv_ref2<0.0) vpv_ref2=0.0;
-        common_vars_vpv2_ref = vpv_ref2;
-
-        ppv_ref2 = vpv_ref2*ipv2;
     }
+    vpv_ref2_fltr = k1_Fltr_vpv1n2 * vpv_ref2_fltr+ k2_Fltr_vpv1n2 * (vpv_ref2 + vpv_ref2_fltr_prev); //Tf=1/(2pi50) 50=fsw/(10x10x10)
+    vpv_ref2_fltr_prev = vpv_ref2_fltr;
+
+    common_vars_vpv2_ref = vpv_ref2_fltr;
+    ppv_ref2 = vpv_ref2_fltr*ipv2;
 }
 
 #pragma FUNC_ALWAYS_INLINE(Vpv_Control2)
