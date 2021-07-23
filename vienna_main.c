@@ -31,6 +31,18 @@
 #include "IQmathLib.h"
 #include "CLAmath.h"
 
+
+//
+// Include Flash API include file
+//
+#include "F021_F28004x_C28x.h"
+
+//
+// Include Flash API example header file
+//
+#include "flash_programming_f28004x.h"
+
+
 //
 //---  State Machine Related ---
 //
@@ -231,8 +243,6 @@ struct COMMAND {
 
 struct COMMAND command=COMMAND_DEFAULTS;
 
-void pickup_constant(void);
-long int Decimizer[]={1, 1,  1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    1,  1,  100,    1,  1,  100,    10, 1,  100000000000,   100,    10, 10, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1000000,    1,  100,    1000000,    1,  100,    1,  1000000,    1,  1000,   1000,   1000,   1000,   1,  1,  1,  1,  100,    100,    100,    100,    10000,  10000,  10000,  10000,  10, 10, 10, 10, 10, 10, 1000000,    1000000};
 
 #define PowerRelay  GpioDataRegs.GPADAT.bit.GPIO14
 #define DisablePWM  GpioDataRegs.GPADAT.bit.GPIO22
@@ -246,6 +256,30 @@ long int Decimizer[]={1, 1,  1,  1,  100,    1,  1,  100,    10, 1,  10000000000
 uint16_t CLA1mathTablesRunStart, CLA1mathTablesLoadStart;
 uint16_t CLA1mathTablesLoadSize;
 void configCLAMemory(void);
+//=====
+// Defines
+void pickup_constant(void);
+long int Decimizer[]={1,    1,  1,  10, 1,  100,    1,  1,  100,    1,  100000, 100,    1,  1,  100,    1,  1,  100,    10, 1,  100000, 100,    10, 10, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1000000,    1,  100,    1000000,    1,  100,    1,  1000000,    1,  1000,   1000,   1000,   1000,   1,  1,  1,  1,  100,    100,    100,    100,    10000,  10000,  10000,  10000,  10, 10, 10, 10, 10, 10, 100000, 10000000,   1};
+#define NosOfConst 73
+float32_t Constants_Default[]={0,   0,  0,  0,  30, 0.4,    2,  8,  9.04,   2,  0.0001, 0.5,    0,  30, 0.4,    2,  8,  9.04,   0,  2,  0.0001, 0.5,    25, -25,    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0.00002,    112,    0.2,    0.00002,    112,    0.2,    500,    0.00002,    0,  31.44,  31.39,  31.44,  31.39,  100,    -100,   100,    -100,   0.7,    0.01,   0.7,    0.01,   0.2364, 0.2349, 0.2364, 0.2349, 25, -25,    25, -25,    25, -25,    0.99373,    0.0031317,  0};
+#define  WORDS_IN_FLASH_BUFFER   NosOfConst*2 //70*2 for float variable; // Length (in 16-bit words) of data buffer used for program
+//Data Buffers used for program operation using the flash API program function
+#pragma  DATA_SECTION(Buffer,"DataBufferSection");
+//uint16   Buffer[WORDS_IN_FLASH_BUFFER + 1];
+float32_t   Buffer[NosOfConst + 1];
+uint32   *Buffer32 = (uint32 *)Buffer;
+//float32_t Read_Buffer[WORDS_IN_FLASH_BUFFER + 1];
+float32_t *Ptr_flash_constants;
+int idx;
+uint16_t HMI_Change_Constants=0;
+void load_flash_constants(void);
+// Prototype of the functions used in this example
+void Example_Error(Fapi_StatusType status);
+void Example_Done(void);
+void Write_to_Flash(void);//void Example_CallFlashAPI(void);
+void FMSTAT_Fail(void);
+void fill_buffer_forflashwrite(void);
+Uint16 errorcheck=0;
 //=====
 
 void main(void)
@@ -433,6 +467,10 @@ void main(void)
     //
     VIENNA_HAL_setPinsAsPWM();
 
+
+    //Load Flash Constants
+    load_flash_constants();
+
     //
     // ISR Mapping
     //
@@ -452,6 +490,17 @@ void main(void)
     LCD_ACTION = CLEAR_SCREEN;
     UpDownKeyFunc=KeyForScreenMov;
     CONTROL_STATE = VDC_CHARGING;
+
+    //First time flash writing after flash erase
+    if (*(uint32_t*)Bzero_Sector6_start) {
+//        errorcheck=*(uint32_t*)Bzero_Sector6_start;
+        Load_Default_Constants=1;
+        fill_buffer_forflashwrite();
+//        errorcheck=*(uint32_t*)Bzero_Sector6_start;
+    }
+
+    //Load constants from flash memory
+    load_flash_constants();
 
     for(;;)
     {
@@ -621,6 +670,11 @@ void B3(void)
 
         if(LEDRed) LEDRed=OFF;
 
+        if (HMI_Change_Constants){
+            if (command_OnOffCh1==OFF && command_OnOffCh2==OFF && UpDownKeyFunc!=KeyForChangeofConst && UpDownKeyFunc!=KeyForChangeIDofConst){
+                fill_buffer_forflashwrite();
+            }
+        }
     }
 
     //    VIENNA_HAL_toggleLED();
@@ -1498,6 +1552,7 @@ void remote_key_display_state_machine(void)
         }
 
         *Ptr_Constant = Constant/((float)Decimizer[ID_Const]);
+        HMI_Change_Constants=1;
     }
 
 
@@ -1791,31 +1846,31 @@ void pickup_constant(void)
 {
     switch(ID_Const){
     case 0:
-        Ptr_Constant = &Select_PVcurve1;
+        Ptr_Constant = &Res_flash_init;
         break;
     case 1:
-        Ptr_Constant = &Select_PVcurve2;
+        Ptr_Constant = &Select_PVcurve1;
         break;
     case 2:
-        Ptr_Constant = &vpv_ref1;
+        Ptr_Constant = &Select_PVcurve2;
         break;
     case 3:
-        Ptr_Constant = &Temp1;
+        Ptr_Constant = &vpv_ref1;
         break;
     case 4:
-        Ptr_Constant = &BetaV1;
+        Ptr_Constant = &Temp1;
         break;
     case 5:
-        Ptr_Constant = &Ns1;
+        Ptr_Constant = &BetaV1;
         break;
     case 6:
-        Ptr_Constant = &Np1;
+        Ptr_Constant = &Ns1;
         break;
     case 7:
-        Ptr_Constant = &ILight1;
+        Ptr_Constant = &Np1;
         break;
     case 8:
-        Ptr_Constant = &ipv1;
+        Ptr_Constant = &ILight1;
         break;
     case 9:
         Ptr_Constant = &Np1;
@@ -1845,7 +1900,7 @@ void pickup_constant(void)
         Ptr_Constant = &ILight2;
         break;
     case 18:
-        Ptr_Constant = &ipv2;
+        Ptr_Constant = &reserved;
         break;
     case 19:
         Ptr_Constant = &Np2;
@@ -2009,12 +2064,29 @@ void pickup_constant(void)
     case 72:
         Ptr_Constant = &k2_Fltr_vpv1n2;
         break;
+    case 73:
+        Ptr_Constant = &Load_Default_Constants;
+        break;
     default:
         Ptr_Constant = &dummy;
         break;
     }
 }
 
+//
+void load_flash_constants(void)
+{
+//    Ptr_flash_constants = (uint32 *)Bzero_Sector6_start; //(uint16*)0x86000;
+    Ptr_flash_constants = (float32_t *)Bzero_Sector6_start; //(uint16*)0x86000;
+    ID_Const=0;
+    for(idx = 0; idx < (NosOfConst+1); idx++)
+    {
+        pickup_constant();
+        *Ptr_Constant = *Ptr_flash_constants;  //Constants_Default[idx]
+        ID_Const++;
+        Ptr_flash_constants++;
+    }
+}
 
 // InitECapture - Initialize ECAP1 configurations
 void InitECapture()
@@ -2201,6 +2273,289 @@ void configCLAMemory(void)
 
 }
 
+void fill_buffer_forflashwrite(void)
+{
+     // Fill a buffer with data to program into the flash.
+     //
+     ID_Const=0;
+     for(i=0; i <= NosOfConst; i++)
+     {
+ //        Buffer[i] = -(float)i-0.01;
+         if ((uint16_t)Load_Default_Constants) {
+             Buffer[i]= Constants_Default[i];       //loading defaults to buffer for write to the flash memory
+             pickup_constant();                     //loading defaults immediately to variables without wait for flash pulling
+             *Ptr_Constant = Constants_Default[i];  //loading defaults immediately to variables without wait for flash pulling
+             ID_Const++;
+             errorcheck=123;
+         }
+         else if (HMI_Change_Constants==1) {    //if (HMI_Change_Constants==1)  is redandent, if used bluetooth in future
+             pickup_constant();
+             Buffer[i]= *Ptr_Constant;
+             ID_Const++;
+         }
+     }
+     Load_Default_Constants = 0;
+     HMI_Change_Constants = 0;
+     Write_to_Flash();
+}
+
+//*****************************************************************************
+#ifdef __cplusplus
+#pragma CODE_SECTION(".TI.ramfunc");
+#else
+#pragma CODE_SECTION(Write_to_Flash, ".TI.ramfunc");
+#endif
+
+void Write_to_Flash(void)
+{
+    uint32 u32Index = 0;
+    uint16 i = 0;
+    Fapi_StatusType  oReturnCheck;
+    Fapi_FlashStatusType  oFlashStatus;
+    Fapi_FlashStatusWordType  oFlashStatusWord;
+
+    EALLOW;
+    //
+    // Note that wait-states are already configured in the Device_init().
+    // However, if INTOSC is used as the clock source and
+    // if the CPUCLK falls in the range (97,100] (check other ranges given in DS),
+    // then an extra wait state is needed for FSM operations (erase/program).
+    // Hence, below function call should be uncommented in case INTOSC is used.
+    // At 100MHz, execution wait-states for external oscillator is 4 and hence
+    // in this example, a wait-state of 5 is used below.
+    // This example is using external oscillator as the clock source and hence
+    // below is commented.
+    //
+    // This wait-state setting impacts both Flash banks. Applications which
+    // perform simultaneous READ/FETCH of one bank and PROGRAM or ERASE of the other
+    // bank must use the higher RWAIT setting during the PROGRAM or ERASE operation. OR
+    // use a clock source or frequency with a common wait state setting
+    // Example: Use 97MHz instead of 100MHz if it is acceptable for the application.
+    //
+    // In case, if user application increments wait-state before using API,
+    // then remember to revert back to the original wait-state after the API usage
+    // to avoid extra wait-state during application execution from Flash.
+    //
+    //
+    Flash_setWaitstates(FLASH0CTRL_BASE, 5);
+
+    // Initialize the Flash API by providing the Flash register base address
+    // and operating frequency.
+    // This function is required to initialize the Flash API based on System frequency
+    // before any other Flash API operation can be performed.
+    // This function must also be called whenever System frequency or RWAIT is changed.
+    oReturnCheck = Fapi_initializeAPI(F021_CPU0_BASE_ADDRESS, 100);
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {//errorcheck=1;
+        // Check Flash API documentation for possible errors
+        Example_Error(oReturnCheck);
+    }
+
+    // Initialize the Flash banks and FMC for erase and program operations.
+    // Fapi_setActiveFlashBank() function sets the Flash banks and FMC for further
+    // Flash operations to be performed on the banks.
+    // Note: It does not matter which bank is passed as the parameter to initialize.
+    //       Both Banks and FMC get initialized with one function call unlike F2837xS.
+    //       Hence there is no need to execute Fapi_setActiveFlashBank() for each bank.
+    //       Executing for one bank is enough.
+    oReturnCheck = Fapi_setActiveFlashBank(Fapi_FlashBank0);
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {//errorcheck=2;
+        // Check Flash API documentation for possible errors
+        Example_Error(oReturnCheck);
+    }
+
+
+    // Erase Flash Bank0 sector6
+    oReturnCheck = Fapi_issueAsyncCommandWithAddress(Fapi_EraseSector,
+                                        (uint32 *)Bzero_Sector6_start);
+
+    // Wait until FSM is done with erase sector operation
+    while (Fapi_checkFsmForReady() != Fapi_Status_FsmReady){}
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {//errorcheck=3;
+        // Check Flash API documentation for possible errors
+        Example_Error(oReturnCheck);
+    }
+
+    // Read FMSTAT register contents to know the status of FSM after
+    // erase command to see if there are any erase operation related errors
+    oFlashStatus = Fapi_getFsmStatus();
+    if(oFlashStatus != 0)
+    {//errorcheck=4;
+        // Check Flash API documentation for FMSTAT and debug accordingly
+        // Fapi_getFsmStatus() function gives the FMSTAT register contents.
+        // Check to see if any of the EV bit, ESUSP bit, CSTAT bit or
+        // VOLTSTAT bit is set (Refer to API documentation for more details).
+        FMSTAT_Fail();
+    }
+
+    // Do blank check
+    // Verify that Bank0 sector6 is erased.  The Erase command itself does a verify as
+    // it goes.  Hence erase verify by CPU reads (Fapi_doBlankCheck()) is optional.
+    oReturnCheck = Fapi_doBlankCheck((uint32 *)Bzero_Sector6_start,
+                   Sector8KB_u32length,
+                   &oFlashStatusWord);
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {//errorcheck=5;
+        // Check Flash API documentation for error info
+        Example_Error(oReturnCheck);
+    }
+
+
+    // A data buffer of max 8 16-bit words can be supplied to the program function.
+    // Each word is programmed until the whole buffer is programmed or a
+    // problem is found. However to program a buffer that has more than 8
+    // words, program function can be called in a loop to program 8 words for
+    // each loop iteration until the whole buffer is programmed.
+    //
+    // Remember that the main array flash programming must be aligned to
+    // 64-bit address boundaries and each 64 bit word may only be programmed
+    // once per write/erase cycle.  Meaning the length of the data buffer
+    // (3rd parameter for Fapi_issueProgrammingCommand() function) passed
+    // to the program function can only be either 4 or 8.
+    //
+    // Program data in Flash using "AutoEccGeneration" option.
+    // When AutoEccGeneration opton is used, Flash API calculates ECC for the given
+    // 64-bit data and programs it along with the 64-bit main array data.
+    // Note that any unprovided data with in a 64-bit data slice
+    // will be assumed as 1s for calculating ECC and will be programmed.
+    //
+    // Note that data buffer (Buffer) is aligned on 64-bit boundary for verify reasons.
+    //
+    // Monitor ECC address for Bank0 Sector6 while programming with AutoEcc mode.
+    //
+
+
+    for(i=0, u32Index = Bzero_Sector6_start;
+       (u32Index < (Bzero_Sector6_start + WORDS_IN_FLASH_BUFFER)) &&
+       (oReturnCheck == Fapi_Status_Success); i+= 4, u32Index+= 8 )
+    {
+        oReturnCheck = Fapi_issueProgrammingCommand((uint32 *)u32Index, Buffer+i, 8,
+                                                                                 0, 0, Fapi_AutoEccGeneration);
+
+        // Wait until the Flash program operation is over
+        while(Fapi_checkFsmForReady() == Fapi_Status_FsmBusy);
+
+        if(oReturnCheck != Fapi_Status_Success)
+        {//errorcheck=6;
+            // Check Flash API documentation for possible errors
+            Example_Error(oReturnCheck);
+        }
+
+        // Read FMSTAT register contents to know the status of FSM after
+        // program command to see if there are any program operation related errors
+        oFlashStatus = Fapi_getFsmStatus();
+        if(oFlashStatus != 0)
+        {//errorcheck=7;
+            //Check FMSTAT and debug accordingly
+            FMSTAT_Fail();
+        }
+
+/*
+        // Verify the programmed values.  Check for any ECC errors.
+        // The program command itself does a verify as it goes.
+        // Hence program verify by CPU reads (Fapi_doVerify()) is optional.
+        oReturnCheck = Fapi_doVerify((uint32 *)u32Index,
+                                     4, Buffer32+(i/2),
+                                     &oFlashStatusWord);
+
+        if(oReturnCheck != Fapi_Status_Success)
+        {errorcheck=8;
+            // Check Flash API documentation for possible errors
+            Example_Error(oReturnCheck);
+        }
+*/
+    }
+
+/*
+
+    // Erase the sector that is programmed above
+    // Erase Bank0 Sector6
+    oReturnCheck = Fapi_issueAsyncCommandWithAddress(Fapi_EraseSector,
+                   (uint32 *)Bzero_Sector6_start);
+
+    // Wait until FSM is done with erase sector operation
+    while (Fapi_checkFsmForReady() != Fapi_Status_FsmReady){}
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {
+        // Check Flash API documentation for possible errors
+        Example_Error(oReturnCheck);
+    }
+
+    // Read FMSTAT register contents to know the status of FSM after
+    // erase command to see if there are any erase operation related errors
+    oFlashStatus = Fapi_getFsmStatus();
+    if(oFlashStatus != 0)
+    {
+        // Check Flash API documentation for FMSTAT and debug accordingly
+        // Fapi_getFsmStatus() function gives the FMSTAT register contents.
+        // Check to see if any of the EV bit, ESUSP bit, CSTAT bit or
+        // VOLTSTAT bit is set (Refer to API documentation for more details).
+        FMSTAT_Fail();
+    }
+
+    // Do blank check
+    // Verify that Bank0 sector6 is erased.  The Erase command itself does a verify as
+    // it goes.  Hence erase verify by CPU reads (Fapi_doBlankCheck()) is optional.
+    oReturnCheck = Fapi_doBlankCheck((uint32 *)Bzero_Sector6_start,
+                   Sector8KB_u32length,
+                   &oFlashStatusWord);
+
+    if(oReturnCheck != Fapi_Status_Success)
+    {
+        // Check Flash API documentation for error info
+        Example_Error(oReturnCheck);
+    }
+
+    // In case, if user application increments wait-state before using API
+    // for INTOSC reason, then remember to revert back (uncomment below funcion call)
+    // to the original wait-state after the API usage to avoid extra wait-state
+    // during application execution from Flash.
+    // At 100MHz, execution wait-states is 4 and hence in this example,
+    // a wait-state of 4 is used below.
+    //
+    // Flash_setWaitstates(FLASH0CTRL_BASE, 4);
+*/
+
+
+    EDIS;
+    // Example is done here
+//    Example_Done();
+}
+
+//******************************************************************************
+// For this example, just stop here if an API error is found
+//******************************************************************************
+void Example_Error(Fapi_StatusType status)
+{
+    //  Error code will be in the status parameter
+        __asm("    ESTOP0");
+}
+
+//******************************************************************************
+//  For this example, once we are done just stop here
+//******************************************************************************
+void Example_Done(void)
+{
+    __asm("    ESTOP0");
+}
+
+//******************************************************************************
+// For this example, just stop here if FMSTAT fail occurs
+//******************************************************************************
+void FMSTAT_Fail(void)
+{
+    //  Error code will be in the status parameter
+        __asm("    ESTOP0");
+}
+
+
 //
-// No more.
+// End of File
 //

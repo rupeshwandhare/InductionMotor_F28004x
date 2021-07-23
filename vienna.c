@@ -401,6 +401,10 @@ volatile float32_t vpv_ref2_fltr_prev;
 volatile float32_t vpv_ref2_fltr;
 volatile float32_t k1_Fltr_vpv1n2;
 volatile float32_t k2_Fltr_vpv1n2;
+
+volatile float32_t Res_flash_init;
+volatile float32_t reserved;
+volatile float32_t Load_Default_Constants;
 //---
 
 #pragma SET_DATA_SECTION()
@@ -708,6 +712,7 @@ void initGlobalVariable(void)
     vpv2_control_feedforward = 0;
     vpv2_control_controlout = 0;
 
+/*
     update_const_k1_PIiL1 = 31.44;
     update_const_k2_PIiL1 = 31.39;
     update_const_k1_PIiL2 = 31.44;
@@ -757,6 +762,7 @@ void initGlobalVariable(void)
     update_const_vdc_threshold_charging_to_idle = 500;
     update_const_deacceleration_rate = 0.00002;
     update_const_upper_duty_threshold = 0;
+*/
 
 
     update_const_vpv_overvoltage_threshold = 400.0;
@@ -806,8 +812,9 @@ void initGlobalVariable(void)
 
     common_flag_init_GlobalVariable = 0;
  
+/*
     Select_PVcurve1 = 2;
-    Io1= 0.0000000001; //9.96*10^(-11);
+    Io1= 0.0001; //FACTOR 0.000001 IS USED IN FORMULA 9.96*10^(-11);
     ILight1=9.04;
     Rs1 = 0.5;//0.219;
     vpv_ref1=0;
@@ -818,7 +825,7 @@ void initGlobalVariable(void)
     Temp1 = 30;//50;
     
     Select_PVcurve2 = 0;
-    Io2= 0.0000000001; //9.96*10^(-11);
+    Io2= 0.0001; //FACTOR 0.000001 IS USED IN FORMULA 9.96*10^(-11);
     ILight2=9.04;
     Rs2 = 0.5;//0.219;
     vpv_ref2=0;
@@ -832,6 +839,7 @@ void initGlobalVariable(void)
 
     k1_Fltr_vpv1n2 = 0.99373647;
     k2_Fltr_vpv1n2 = 0.00313176265;
+*/
 }
 
 

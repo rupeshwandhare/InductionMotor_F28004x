@@ -58,7 +58,12 @@ PAGE 1 :
 
    BOOT_RSVD       : origin = 0x000002, length = 0x0000F3     /* Part of M0, BOOT rom will use this for stack */
 
-   RAMM1           : origin = 0x000400, length = 0x000400     /* on-chip RAM block M1 */
+   /* on-chip RAM block M1 */
+   /* NOTE! Address range 0x760-0x77F must be reserved when using ROM Flash API */
+   /*       Address range 0x780-0x7FF must be reserved when using ROM TI-RTOS */
+   RAMM1       : origin = 0x000400, length = 0x000360
+   RAMM1_RESERVED_ROM_FLASHAPI  : origin = 0x000760, length = 0x000020
+   RAMM1_RESERVED_ROM_TIRTOS    : origin = 0x000780, length = 0x000080
 
    RAMLS0LS1       : origin = 0x008000, length = 0x001000
 
@@ -84,7 +89,7 @@ SECTIONS
    .reset           : > RESET,     PAGE = 0, TYPE = DSECT /* not used, */
 
    .stack           : > RAMLS7,     PAGE = 1    //IT WAS RAMM1, PAGE=1
-   .data            : > RAMM1,     PAGE = 1 	//IT WAS RAMM1, PAGE=1
+   .data            : > RAMLS6,     PAGE = 0 	//IT WAS RAMM1, PAGE=1
 
 //TODO location of RAMGS3 is different between f2837xd and f28004x
    .bss            : >> RAMGS3      PAGE = 1
@@ -92,7 +97,7 @@ SECTIONS
    .const          : > FLASH_BANK0_SEC4,    PAGE = 0, ALIGN(4)
 
 //BELOW NEWLY ADDED RUPESH
-	CLA1mathTables    : > RAMLS6,                 PAGE = 0
+	CLA1mathTables    : > RAMM1,                 PAGE = 1   //IT WAS RAMLS6,     PAGE = 0
 
    GROUP
    {
@@ -160,7 +165,7 @@ SECTIONS
                       LOAD_SIZE(Cla1ProgLoadSize),
                       PAGE = 0, ALIGN(4)
 
-
+	DataBufferSection : > RAMM1, PAGE = 1, ALIGN(4)
 }
 
 /*

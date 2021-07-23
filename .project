@@ -46,6 +46,14 @@
 			<value>$%7BCOM_TI_DIGITAL_POWER_C2000WARE_SDK_SOFTWARE_PACKAGE_INSTALL_DIR%7D/c2000ware/libraries/math/FPUfastRTS/c28</value>
 		</variable>
 		<variable>
+			<name>FlashAPI_INCLUDE_ROOT</name>
+			<value>file:/C:/ti/c2000/C2000Ware_3_04_00_00/libraries/flash_api/f28004x/include/FlashAPI</value>
+		</variable>
+		<variable>
+			<name>FlashAPI_LIB_ROOT</name>
+			<value>file:/C:/ti/c2000/C2000Ware_3_04_00_00/libraries/flash_api/f28004x/lib</value>
+		</variable>
+		<variable>
 			<name>POWER_MEAS_LIB_ROOT</name>
 			<value>$%7BCOM_TI_DIGITAL_POWER_C2000WARE_SDK_SOFTWARE_PACKAGE_INSTALL_DIR%7D/libraries/power_measurement</value>
 		</variable>

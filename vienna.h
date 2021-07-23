@@ -439,6 +439,10 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile float32_t k1_Fltr_vpv1n2;
     extern volatile float32_t k2_Fltr_vpv1n2;
 
+    extern volatile float32_t Res_flash_init;
+    extern volatile float32_t reserved;
+    extern volatile float32_t Load_Default_Constants;
+
 //};
 //#define UPDATE_CONST_DEFAULTS {31.44,   31.39,  31.44,  31.39,  100,    -100,   100,    -100,   0.7,    0.01,   0.7,    0.01,   0.2364, 0.2349, 0.2364, 0.2349, 25, -25,    25, -25,    25, -25,    25, -25,    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0.00002,    112,    0.2,    0.00002,    112,    0.2,    500,    0.00002,    0}
 
@@ -495,8 +499,8 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile uint32_t testing_variable;
     extern volatile uint16_t VIENNA_boardStatus;
 
-    enum PVcurvesCh1 {Ch1Isc20Voc360Ipv16=0, Ch1P300Ns8Np2Bv045=1, Ch1P300Ns8Np1Bv045=2, Ch1P300Ns9Np2Bv045=3, Ch1P300Ns9Np1Bv045=4, Ch1P300Ns10Np2Bv045=5, Ch1P300Ns10Np1Bv045=6, Ch1P300Ns11Np2Bv045=7, Ch1P300Ns11Np1Bv045=8, Ch1P300Ns12Np2Bv045=9, Ch1P300Ns12Np1Bv045=10};
-    enum PVcurvesCh2 {Ch2Isc20Voc360Ipv16=0, Ch2P300Ns8Np2Bv045=1, Ch2P300Ns8Np1Bv045=2, Ch2P300Ns9Np2Bv045=3, Ch2P300Ns9Np1Bv045=4, Ch2P300Ns10Np2Bv045=5, Ch2P300Ns10Np1Bv045=6, Ch2P300Ns11Np2Bv045=7, Ch2P300Ns11Np1Bv045=8, Ch2P300Ns12Np2Bv045=9, Ch2P300Ns12Np1Bv045=10};
+    enum PVcurvesCh1 {Ch1Isc20Voc360Ipv16=0, Ch1P300Ns8Np2Bv045=1, Ch1P300Ns8Np1Bv045=2, Ch1P300Ns9Np2Bv045=3, Ch1P300Ns9Np1Bv045=4, Ch1P300Ns10Np2Bv045=5, Ch1P300Ns10Np1Bv045=6, Ch1P300Ns11Np2Bv045=7, Ch1P300Ns11Np1Bv045=8, Ch1P300Ns12Np2Bv045=9, Ch1P300Ns12Np1Bv045=10, Ch1constant_vpv=11};
+    enum PVcurvesCh2 {Ch2Isc20Voc360Ipv16=0, Ch2P300Ns8Np2Bv045=1, Ch2P300Ns8Np1Bv045=2, Ch2P300Ns9Np2Bv045=3, Ch2P300Ns9Np1Bv045=4, Ch2P300Ns10Np2Bv045=5, Ch2P300Ns10Np1Bv045=6, Ch2P300Ns11Np2Bv045=7, Ch2P300Ns11Np1Bv045=8, Ch2P300Ns12Np2Bv045=9, Ch2P300Ns12Np1Bv045=10, Ch2constant_vpv=11};
 
     extern volatile float32_t Select_PVcurve1;
     extern volatile float32_t Select_PVcurve2;
@@ -880,17 +884,17 @@ static inline void vpv_ref1_generation(void)
                     break;
     }
 
-    if((uint16_t)Select_PVcurve1!=Ch1Isc20Voc360Ipv16) {
+    if(((uint16_t)Select_PVcurve1!=Ch1Isc20Voc360Ipv16) && ((uint16_t)Select_PVcurve1!=Ch1constant_vpv)) {
         ipv1=sensor_i_pv1_fltr;
 
         if (ipv1>ILight1*Np1) ipv1=ILight1*Np1;
 
         #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
-        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1) +1  ) - Ns1*Rs1*ipv1 );
+        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1*0.000001) +1  ) - Ns1*Rs1*ipv1 );
         #endif
 
         #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
-        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1) +1  ) - Ns1*Rs1*ipv1 );
+        vpv_ref1 = (1-(Temp1-25)*BetaV1/100)*( (1.8146*Ns1)*logf(  (Np1*ILight1-ipv1) /(Np1*Io1*0.000001) +1  ) - Ns1*Rs1*ipv1 );
         #endif
 
 /*
@@ -907,6 +911,7 @@ static inline void vpv_ref1_generation(void)
     vpv_ref1_fltr_prev = vpv_ref1_fltr;
 
     common_vars_vpv1_ref = vpv_ref1_fltr;
+//    common_vars_vpv1_ref = 100.0; //for testing purpose only
     ppv_ref1 = vpv_ref1_fltr*ipv1;
 }
 
@@ -1059,16 +1064,16 @@ static inline void vpv_ref2_generation(void)
                     break;
     }
 
-    if((uint16_t)Select_PVcurve2!=Ch2Isc20Voc360Ipv16) {
+    if(((uint16_t)Select_PVcurve2!=Ch2Isc20Voc360Ipv16) && ((uint16_t)Select_PVcurve2!=Ch2constant_vpv)) {
         ipv2=sensor_i_pv2_fltr;
         if (ipv2>ILight2*Np2) ipv2=ILight2*Np2;
 
         #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
-        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*logf(  (Np2*ILight2-ipv2) /(Np2*Io2) +1  ) - Ns2*Rs2*ipv2 );
+        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*logf(  (Np2*ILight2-ipv2) /(Np2*Io2*0.000001) +1  ) - Ns2*Rs2*ipv2 );
         #endif
 
         #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
-        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*log(  (Np2*ILight2-ipv2) /(Np2*Io2) +1  ) - Ns2*Rs2*ipv2 );
+        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*log(  (Np2*ILight2-ipv2) /(Np2*Io2*0.000001) +1  ) - Ns2*Rs2*ipv2 );
         #endif
 
         if (vpv_ref2>((1+(Temp2-25)*BetaV2/100)*Ns2*45.78)){
@@ -1076,6 +1081,7 @@ static inline void vpv_ref2_generation(void)
         }
         if (vpv_ref2<0.0) vpv_ref2=0.0;
     }
+
     vpv_ref2_fltr = k1_Fltr_vpv1n2 * vpv_ref2_fltr+ k2_Fltr_vpv1n2 * (vpv_ref2 + vpv_ref2_fltr_prev); //Tf=1/(2pi50) 50=fsw/(10x10x10)
     vpv_ref2_fltr_prev = vpv_ref2_fltr;
 
