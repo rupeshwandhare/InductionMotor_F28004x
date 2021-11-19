@@ -1017,7 +1017,7 @@ void VIENNA_HAL_setupBoardProtection(uint32_t base1, uint32_t base2,
         ASysCtl_selectCMPLPMux(ASYSCTL_CMPLPMUX_SELECT_2, 0); //For A4  //Refer notes Rupesh's Notebook/Software2/ADC and Pwm in DC converter; Tested using DSO, instantenous trip
 
 //        VIENNA_HAL_setupCMPSS(VIENNA_BOARD_PROT_IL1_CUR_CMPSS_BASE, current_limit, current_max_sense );
-iu8i        VIENNA_HAL_setupCMPSS(CMPSS2_BASE, 10, 15 );
+        VIENNA_HAL_setupCMPSS(CMPSS2_BASE, 10, 15 );
 //        XBAR_setEPWMMuxConfig(XBAR_TRIP5, VIENNA_BOARD_PROT_IL1_CUR_XBAR_MUX_VAL);
         XBAR_setEPWMMuxConfig(XBAR_TRIP5, XBAR_EPWM_MUX02_CMPSS2_CTRIPH_OR_L);  //Refer xbar.h //IT IS INTERNALLY HARDWIRED //Refer notes Rupesh's Notebook/Software2/ADC and Pwm in DC converter
         XBAR_enableEPWMMux(XBAR_TRIP5, XBAR_MUX02); //From above line mux
