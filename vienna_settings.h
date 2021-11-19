@@ -81,8 +81,8 @@ extern "C" {
 #define VIENNA_VDCBUS_MAX_SENSE_VOLTS ((float32_t)717.79)
 #define VIENNA_V_MAX_SENSE_VOLTS ((float32_t)454)
 
-#define VIENNA_I_MAX_SENSE_AMPS ((float32_t)12)
-#define VIENNA_I_TRIP_LIMIT_AMPS ((float32_t)11)
+#define VIENNA_I_MAX_SENSE_AMPS ((float32_t)44.75)//((float32_t)12)
+#define VIENNA_I_TRIP_LIMIT_AMPS ((float32_t)40) //((float32_t)11)
 #define VIENNA_VAC_TYPICAL_VOLTS ((float32_t)208)
 
 //

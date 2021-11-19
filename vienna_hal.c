@@ -226,7 +226,7 @@ void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3,
 
     EPWM_enablePhaseShiftLoad(base2);
     EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base2, 2);        //This is checked if we keep phase shift 1000 then it creates exactly 180deg phase shift along with proper deadband as deadband is symmetrical due to equal FED RED
+    EPWM_setPhaseShift(base2, 1000);        //This is checked if we keep phase shift 1000 then it creates exactly 180deg phase shift along with proper deadband as deadband is symmetrical due to equal FED RED
     EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 
 
@@ -1017,7 +1017,7 @@ void VIENNA_HAL_setupBoardProtection(uint32_t base1, uint32_t base2,
         ASysCtl_selectCMPLPMux(ASYSCTL_CMPLPMUX_SELECT_2, 0); //For A4  //Refer notes Rupesh's Notebook/Software2/ADC and Pwm in DC converter; Tested using DSO, instantenous trip
 
 //        VIENNA_HAL_setupCMPSS(VIENNA_BOARD_PROT_IL1_CUR_CMPSS_BASE, current_limit, current_max_sense );
-        VIENNA_HAL_setupCMPSS(CMPSS2_BASE, 10, 15 );
+iu8i        VIENNA_HAL_setupCMPSS(CMPSS2_BASE, 10, 15 );
 //        XBAR_setEPWMMuxConfig(XBAR_TRIP5, VIENNA_BOARD_PROT_IL1_CUR_XBAR_MUX_VAL);
         XBAR_setEPWMMuxConfig(XBAR_TRIP5, XBAR_EPWM_MUX02_CMPSS2_CTRIPH_OR_L);  //Refer xbar.h //IT IS INTERNALLY HARDWIRED //Refer notes Rupesh's Notebook/Software2/ADC and Pwm in DC converter
         XBAR_enableEPWMMux(XBAR_TRIP5, XBAR_MUX02); //From above line mux
@@ -1199,7 +1199,7 @@ void VIENNA_HAL_setupPWMTrip(uint32_t base)
 // GPIO related
 // setupProfilingGPIO()
 //
-void VIENNA_HAL_setupProfilingGPIO(void)
+void VIENNA_HAL_setupProfilingGPIO(void)  //IT LOOKS LIKE IT HAS NOT BEEN CALLED FROM MAIN
 {
     GPIO_setDirectionMode(VIENNA_GPIO_PROFILING1, GPIO_DIR_MODE_OUT);
     GPIO_setDirectionMode(VIENNA_GPIO_PROFILING2, GPIO_DIR_MODE_OUT);
@@ -1214,15 +1214,15 @@ void VIENNA_HAL_setupProfilingGPIO(void)
 #endif
 
     GPIO_setDirectionMode(POWER_RELAY, GPIO_DIR_MODE_OUT);
-    GPIO_setDirectionMode(DISABLE_PWM, GPIO_DIR_MODE_OUT);
+    GPIO_setDirectionMode(DISABLE_PWM1, GPIO_DIR_MODE_OUT);
     GPIO_setQualificationMode(POWER_RELAY, GPIO_QUAL_SYNC);
-    GPIO_setQualificationMode(DISABLE_PWM, GPIO_QUAL_SYNC);
+    GPIO_setQualificationMode(DISABLE_PWM1, GPIO_QUAL_SYNC);
     GPIO_setPinConfig(POWER_RELAY_PIN_CONFIG);
-    GPIO_setPinConfig(DISABLE_PWM_PIN_CONFIG);
+    GPIO_setPinConfig(DISABLE_PWM1_PIN_CONFIG);
 
 #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
     GPIO_setMasterCore(POWER_RELAY, GPIO_CORE_CPU1_CLA1);
-    GPIO_setMasterCore(DISABLE_PWM, GPIO_CORE_CPU1_CLA1);
+    GPIO_setMasterCore(DISABLE_PWM1, GPIO_CORE_CPU1_CLA1);
 #endif
 
 }

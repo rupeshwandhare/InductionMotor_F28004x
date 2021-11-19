@@ -195,8 +195,8 @@ char screen4r2text[] =      "IL2=  . ;Vp2=   ";
 char screen5r1text[] =      "BoardTemp=  . C ";
 char screen5r2text[] =      "Vdc=   V;Vc= .  ";
 
-char screen6r1text[] =      "POT=  %;Dt=  . %";
-char screen6r2text[] =      "Spare2          ";
+char screen6r1text[] =      "Dt1=  . %POT=  %";
+char screen6r2text[] =      "Dt2=  . %       ";
 
 char screen7r1text[] =      "To Change Para: ";
 char screen7r2text[] =      "PsW:            ";
@@ -292,6 +292,7 @@ void main(void)
     //
 
     VIENNA_HAL_setupDevice();
+
     configCLAMemory();
     //======
     EALLOW;
@@ -307,6 +308,7 @@ void main(void)
 #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
     GPIO_setMasterCore(14, GPIO_CORE_CPU1_CLA1);
     GPIO_setMasterCore(22, GPIO_CORE_CPU1_CLA1);
+//    GPIO_setMasterCore(26, GPIO_CORE_CPU1_CLA1); //defined after new lines down
 #endif
 
     EALLOW;
@@ -328,13 +330,13 @@ void main(void)
     GpioCtrlRegs.GPAMUX2.bit.GPIO26 = 0;
     GpioCtrlRegs.GPADIR.bit.GPIO26 = 1;
     EDIS;
-    GpioDataRegs.GPACLEAR.bit.GPIO26 = 1;
+//    GpioDataRegs.GPACLEAR.bit.GPIO26 = 1;
     //=====
 
 #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
     GPIO_setMasterCore(26, GPIO_CORE_CPU1_CLA1);
 #endif
-
+    GpioDataRegs.GPADAT.bit.GPIO26 = 1;
     //
     // Tasks State-machine init
     //
@@ -911,13 +913,39 @@ void LCD_selection(void)
            }
 */
 
+           if(CONTROL_STATE2 == VPV_CONTROL2) {
+               screen2r1text[4] = 'O';
+               screen2r1text[5] = 'n';
+               screen2r1text[6] = ' ';
+           } else if(CONTROL_STATE2 == IDLE_STATE2) {
+               screen2r1text[4] = 'O';
+               screen2r1text[5] = 'f';
+               screen2r1text[6] = 'f';
+           } else if(CONTROL_STATE2 == SLEW_CONTROL2) {
+               screen2r1text[4] = 'A';
+               screen2r1text[5] = 'c';
+               screen2r1text[6] = 'c';
+           } else if(CONTROL_STATE2 == FAULT_STATE) {
+               screen2r1text[4] = 'F';
+               screen2r1text[5] = 'l';
+               screen2r1text[6] = 't';
+           } else if(CONTROL_STATE2 == VDC_CHARGING) {
+               screen2r1text[4] = 'C';
+               screen2r1text[5] = 'h';
+               screen2r1text[6] = 'g';
+           } else if(CONTROL_STATE2 == DEACCELERATION2) {
+               screen2r1text[4] = 'D';
+               screen2r1text[5] = 'c';
+               screen2r1text[6] = 'c';
+           }
+
 //           va = 23.1;
            x_hecto = (unsigned int)(VIENNA_vDCMeas_pu*0.01);
            x_deca = (unsigned int)((float)(VIENNA_vDCMeas_pu - (float)(x_hecto*100))* 0.1);
            x_int = (unsigned int) ((float)VIENNA_vDCMeas_pu - (float)(x_hecto*100) - (float)(x_deca*10));
-           screen1r1text[12] = (x_hecto+'0');
-           screen1r1text[13] = (x_deca+'0');
-           screen1r1text[14] = (x_int+'0');
+           screen2r1text[12] = (x_hecto+'0');
+           screen2r1text[13] = (x_deca+'0');
+           screen2r1text[14] = (x_int+'0');
 
            string_LCD = screen2r1text;
            New_string = 1;
@@ -1068,22 +1096,23 @@ void LCD_selection(void)
            break;
 
        case SCREEN6R1:
-           //char screen6r1text[] =      "POT=  %;Dt=  . %";
-           Pot_percent=VIENNA_POTMeas_pu*100;
-           x_hecto = (unsigned int)(Pot_percent*0.01);
-           x_deca = (unsigned int)((float)(Pot_percent - (float)(x_hecto*100))* 0.1);
-           x_int = (unsigned int) ((float)Pot_percent - (float)(x_hecto*100) - (float)(x_deca*10));
-//           screen6r1text[4] = (x_hecto+'0');
-           screen6r1text[4] = (x_deca+'0');
-           screen6r1text[5] = (x_int+'0');
+           //char screen6r1text[] =      "Dt1=  . %POT=  %";
 
            Duty_percent=(common_vars_duty1-0.030)*100; //(2x2x0.15usec)/(1/fsw)  2 for updowncount and 2 for at front and at back; Even after this 1% error at 50kHz due to IC response time
            if (Duty_percent<0.0) Duty_percent=0.0;
            x_hecto = (unsigned int)(Duty_percent*0.1);
            x_deca = (unsigned int)((float)(Duty_percent - x_hecto*10));
            x_int = (unsigned int) (float)(Duty_percent*10 - (float)(x_hecto*100) - (float)(x_deca*10));
-           screen6r1text[11] = (x_hecto+'0');
-           screen6r1text[12] = (x_deca+'0');
+           screen6r1text[4] = (x_hecto+'0');
+           screen6r1text[5] = (x_deca+'0');
+           screen6r1text[7] = (x_int+'0');
+
+           Pot_percent=VIENNA_POTMeas_pu*100;
+           x_hecto = (unsigned int)(Pot_percent*0.01);
+           x_deca = (unsigned int)((float)(Pot_percent - (float)(x_hecto*100))* 0.1);
+           x_int = (unsigned int) ((float)Pot_percent - (float)(x_hecto*100) - (float)(x_deca*10));
+//           screen6r1text[4] = (x_hecto+'0');
+           screen6r1text[13] = (x_deca+'0');
            screen6r1text[14] = (x_int+'0');
 
            string_LCD = screen6r1text;
@@ -1092,7 +1121,16 @@ void LCD_selection(void)
            LCD_ACTION = LCD_NO_ACTION;
            break;
        case SCREEN6R2:
-           //char screen6r2text[] =      "Spare2          ";
+           //char screen6r2text[] =      "Dt2=  . %       ";
+
+           Duty_percent=(common_vars_duty2-0.030)*100; //(2x2x0.15usec)/(1/fsw)  2 for updowncount and 2 for at front and at back; Even after this 1% error at 50kHz due to IC response time
+           if (Duty_percent<0.0) Duty_percent=0.0;
+           x_hecto = (unsigned int)(Duty_percent*0.1);
+           x_deca = (unsigned int)((float)(Duty_percent - x_hecto*10));
+           x_int = (unsigned int) (float)(Duty_percent*10 - (float)(x_hecto*100) - (float)(x_deca*10));
+           screen6r2text[4] = (x_hecto+'0');
+           screen6r2text[5] = (x_deca+'0');
+           screen6r2text[7] = (x_int+'0');
 
            string_LCD = screen6r2text;
            New_string = 1;
@@ -1191,7 +1229,12 @@ void LCD_selection(void)
                screen9r1text[7] = 'V';
                screen9r1text[8] = 'D';
                screen9r1text[9] = 'C';
-           } else if(VIENNA_boardStatus == vpv_overvoltage) {
+           } else if(VIENNA_boardStatus == vpv1_overvoltage) {
+               screen9r1text[6] = 'O';
+               screen9r1text[7] = 'V';
+               screen9r1text[8] = 'P';
+               screen9r1text[9] = 'V';
+           } else if(VIENNA_boardStatus == vpv2_overvoltage) {
                screen9r1text[6] = 'O';
                screen9r1text[7] = 'V';
                screen9r1text[8] = 'P';
@@ -1583,10 +1626,14 @@ void remote_key_display_state_machine(void)
             command.OnOffCh1=ON;
             command_OnOffCh1=ON;
         }
-        if ((command.OnOffCh2)&&(Screen_count==2))
+        else if ((command.OnOffCh2)&&(Screen_count==2)) {
             command.OnOffCh2=OFF;
-        else if ((!command.OnOffCh2)&&(Screen_count==2))
+            command_OnOffCh2=OFF;
+        }
+        else if ((!command.OnOffCh2)&&(Screen_count==2)) {
             command.OnOffCh2=ON;
+            command_OnOffCh2=ON;
+        }
 
         if (Screen_count==9) {
             command.Clear_OCfault  = 1;
@@ -1618,7 +1665,7 @@ void remote_key_display_state_machine(void)
         }
 
 //        LCD_ACTION = SCREEN1R2;
-        Test3=5;
+//        Test3=5;
     }
 
     if (CONTROL_STATE == FAULT_STATE) {

@@ -519,48 +519,49 @@ static inline void resetPOWER_RELAY(void)
 
 // setDisablePWMGPIO
 //
-static inline void setDISABLE_PWM(void)
+static inline void setDISABLE_PWM1(void)
 {
     #pragma diag_suppress = 770
     #pragma diag_suppress = 173
-    HWREG(GPIODATA_BASE + GPIO_O_GPASET ) = DISABLE_PWM_SET;
+    HWREG(GPIODATA_BASE + GPIO_O_GPASET ) = DISABLE_PWM1_SET;
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }
 
 // resetDisablePWMGPIO
 //
-static inline void resetDISABLE_PWM(void)
+static inline void resetDISABLE_PWM1(void)
 {
     #pragma diag_suppress = 770
     #pragma diag_suppress = 173
-    HWREG(GPIODATA_BASE + GPIO_O_GPACLEAR ) = DISABLE_PWM_CLEAR;
+    HWREG(GPIODATA_BASE + GPIO_O_GPACLEAR ) = DISABLE_PWM1_CLEAR;
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }
 
 // setTimeCheckGPIO
 //
-static inline void setTimeCheck(void)
+static inline void setDISABLE_PWM2(void)
 {
     #pragma diag_suppress = 770
     #pragma diag_suppress = 173
-    HWREG(GPIODATA_BASE + GPIO_O_GPASET ) = TIME_CHECK_SET;
+    HWREG(GPIODATA_BASE + GPIO_O_GPASET ) = DISABLE_PWM2_SET;
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }
 
 // resetTimeCheckGPIO
 //
-static inline void resetTimeCheck(void)
+static inline void resetDISABLE_PWM2(void)
 {
     #pragma diag_suppress = 770
     #pragma diag_suppress = 173
-    HWREG(GPIODATA_BASE + GPIO_O_GPACLEAR ) = TIME_CHECK_CLEAR;
+    HWREG(GPIODATA_BASE + GPIO_O_GPACLEAR ) = DISABLE_PWM2_CLEAR;
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }
 
+/*
 // ToggleTimeCheckGPIO
 //
 static inline void toggleTimeCheck(void)
@@ -571,6 +572,7 @@ static inline void toggleTimeCheck(void)
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }
+*/
 
 #ifndef __TMS320C28XX_CLA__
 

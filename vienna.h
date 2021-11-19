@@ -151,9 +151,10 @@ enum VIENNA_boardStatus_enum {
     boardStatus_OverCurrentTrip_IL3 = 4,
     boardStatus_OverCurrentTrip = 5,
     boardStatus_OverVoltageTrip = 6,
-    vpv_overvoltage = 7,
+    vpv1_overvoltage = 7,
     boardStatus_EmulatorStopTrip = 8,
     vdc_undervoltage=9,
+    vpv2_overvoltage = 10,
 };
 
 //
@@ -338,7 +339,8 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
 
 //
 //struct COMMON_FLAG {
-    extern volatile uint16_t common_flag_clearTrip;
+    extern volatile uint16_t common_flag_clearTripPWM1;
+    extern volatile uint16_t common_flag_clearTripPWM2;
 //};
 //#define COMMON_FLAG_DEFAULTS {0}
 
@@ -496,7 +498,7 @@ enum STATE {VDC_CHARGING=0, IDLE_STATE1=1, SLEW_CONTROL1=2, VPV_CONTROL1=3, DEAC
     extern volatile uint16_t CONTROL_STATE2;
     extern volatile uint32_t count_charging4;
     extern volatile uint16_t common_flag_init_GlobalVariable;
-    extern volatile uint32_t testing_variable;
+//    extern volatile uint32_t testing_variable;
     extern volatile uint16_t VIENNA_boardStatus;
 
     enum PVcurvesCh1 {Ch1Isc20Voc360Ipv16=0, Ch1P300Ns8Np2Bv045=1, Ch1P300Ns8Np1Bv045=2, Ch1P300Ns9Np2Bv045=3, Ch1P300Ns9Np1Bv045=4, Ch1P300Ns10Np2Bv045=5, Ch1P300Ns10Np1Bv045=6, Ch1P300Ns11Np2Bv045=7, Ch1P300Ns11Np1Bv045=8, Ch1P300Ns12Np2Bv045=9, Ch1P300Ns12Np1Bv045=10, Ch1constant_vpv=11};
@@ -663,12 +665,13 @@ static inline void VIENNA_readCurrVolSDFMSignals(float32_t sdfm_scale_factor)
                      VIENNA_I_MAX_SENSE_AMPS);
 }
 
+/*
 //
 // clearPWMTrip()
 //
 static inline void VIENNA_clearPWMTrip()
 {
-    if(common_flag_clearTrip == 1)
+    if(common_flag_clearTripPWM1 == 1)
     {
         //
         // clear all the configured trip sources for the PWM module
@@ -683,32 +686,60 @@ static inline void VIENNA_clearPWMTrip()
         CMPSS_clearFilterLatchHigh(CMPSS5_BASE);
         CMPSS_clearFilterLatchLow(CMPSS5_BASE);
 
-        common_flag_clearTrip = 0;
-        resetDISABLE_PWM();
+        common_flag_clearTripPWM1 = 0;
+        resetDISABLE_PWM1();
+        resetDISABLE_PWM2();
+    }
+}
+*/
+
+#pragma FUNC_ALWAYS_INLINE(clearPWM1Trip)
+static inline void clearPWM1Trip(void)
+{
+    if(common_flag_clearTripPWM1 == 1)
+    {
+        //
+        // clear all the configured trip sources for the PWM module
+        EPWM_clearTripZoneFlag(EPWM1_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+//        EPWM_clearTripZoneFlag(EPWM2_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+//        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+
+        CMPSS_clearFilterLatchHigh(CMPSS1_BASE);
+        CMPSS_clearFilterLatchLow(CMPSS1_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS2_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS2_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS5_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS5_BASE);
+
+        common_flag_clearTripPWM1 = 0;
+        //DisablePWM = CLEAR;
+        resetDISABLE_PWM1();
+//        resetDISABLE_PWM2();
     }
 }
 
-//#pragma FUNC_ALWAYS_INLINE(clearPWMTrip4)
-static inline void clearPWMTrip(void)
+#pragma FUNC_ALWAYS_INLINE(clearPWM2Trip)
+static inline void clearPWM2Trip(void)
 {
-    if(common_flag_clearTrip == 1)
+    if(common_flag_clearTripPWM2 == 1)
     {
         //
         // clear all the configured trip sources for the PWM module
-        EPWM_clearTripZoneFlag(EPWM1_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+//        EPWM_clearTripZoneFlag(EPWM1_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
         EPWM_clearTripZoneFlag(EPWM2_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
-        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+//        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
 
-        CMPSS_clearFilterLatchHigh(CMPSS1_BASE);
-        CMPSS_clearFilterLatchLow(CMPSS1_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS1_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS1_BASE);
         CMPSS_clearFilterLatchHigh(CMPSS2_BASE);
         CMPSS_clearFilterLatchLow(CMPSS2_BASE);
-        CMPSS_clearFilterLatchHigh(CMPSS5_BASE);
-        CMPSS_clearFilterLatchLow(CMPSS5_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS5_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS5_BASE);
 
-        common_flag_clearTrip = 0;
+        common_flag_clearTripPWM2 = 0;
         //DisablePWM = CLEAR;
-        resetDISABLE_PWM();
+//        resetDISABLE_PWM1();
+        resetDISABLE_PWM2();
     }
 }
 
@@ -724,8 +755,9 @@ static inline void Vdc_Charging(void)
     DisablePWM = SET;
 */
     resetPOWER_RELAY();
-    setDISABLE_PWM();
-    testing_variable = 200;
+    setDISABLE_PWM1();
+    setDISABLE_PWM2();
+//    testing_variable = 200;
     count_charging4++;
     if (count_charging4<100000) return;
     count_charging4 = 0;
@@ -739,9 +771,11 @@ static inline void Vdc_Charging(void)
         CONTROL_STATE = IDLE_STATE1;
         CONTROL_STATE2 = IDLE_STATE2;
 
+/*
         if (CONTROL_STATE == IDLE_STATE1) {
             testing_variable = 100;
         }
+*/
     }
 
 }
@@ -750,13 +784,13 @@ static inline void Vdc_Charging(void)
 static inline void Idle_State1(void)
 {
 /*    if (!DisablePWM) DisablePWM = SET;*/
-    setDISABLE_PWM();
+    setDISABLE_PWM1();
     if ( (command_OnOffCh1) && (VIENNA_vDCMeas_pu > update_const_vdc_threshold_charging_to_idle)) {
 /*        PowerRelay = ON;*/
         setPOWER_RELAY();
         //PowerControl_State_Ptr1 = &Slew_Control1;
         CONTROL_STATE = SLEW_CONTROL1;
-        common_flag_clearTrip = 1;
+        common_flag_clearTripPWM1 = 1;
 
 /*
         EALLOW;
@@ -770,7 +804,7 @@ static inline void Idle_State1(void)
 #pragma FUNC_ALWAYS_INLINE(Slew_Control1)
 static inline void Slew_Control1(void)
 {
-    clearPWMTrip();
+    clearPWM1Trip();
     common_vars_duty1 =common_vars_duty1+update_const_slew_rate1;
 
     if ((sensor_v_pv1_fltr > update_const_vpv1_threshold_slew_to_vpvcontrol) || (common_vars_duty1 >= update_const_duty1_threshold_slew_to_vpvcontrol)) {
@@ -806,7 +840,7 @@ static inline void buck1_current_control(void)
 #pragma FUNC_ALWAYS_INLINE(buck1pv_voltage_control)
 static inline void buck1pv_voltage_control(void)
 {
-//    common_vars_vpv1_ref = 100.0; //FOR TESTING ONLY
+    common_vars_vpv1_ref = 100.0; //FOR TESTING ONLY
     vpv1_control_ref = common_vars_vpv1_ref;
     vpv1_control_error = vpv1_control_ref - VIENNA_vPV1Meas_pu;
     vpv1_control_PIout = vpv1_control_PIout + update_const_k1_PIvpv1 * vpv1_control_error - update_const_k2_PIvpv1 * vpv1_control_error_prev;
@@ -947,10 +981,31 @@ static inline void Deacceleration1(void)
     }
 }
 
+#pragma FUNC_ALWAYS_INLINE(Idle_State2)
+static inline void Idle_State2(void)
+{
+/*    if (!DisablePWM) DisablePWM = SET;*/
+    setDISABLE_PWM2();
+    if ( (command_OnOffCh2) && (VIENNA_vDCMeas_pu > update_const_vdc_threshold_charging_to_idle)) {
+/*        PowerRelay = ON;*/
+        setPOWER_RELAY();
+        //PowerControl_State_Ptr1 = &Slew_Control1;
+        CONTROL_STATE2 = SLEW_CONTROL2;
+        common_flag_clearTripPWM2 = 1;
+
+/*
+        EALLOW;
+        EPwm1Regs.TZCLR.bit.OST = 1; //only for testing
+        EDIS;
+*/
+
+    }
+}
+
 #pragma FUNC_ALWAYS_INLINE(Slew_Control2)
 static inline void Slew_Control2(void)
 {
-    clearPWMTrip();
+    clearPWM2Trip();
     common_vars_duty2 =common_vars_duty2+update_const_slew_rate2;
 
     if ((sensor_v_pv2_fltr > update_const_vpv2_threshold_slew_to_vpvcontrol) || (common_vars_duty2 >= update_const_duty2_threshold_slew_to_vpvcontrol)) {
@@ -1073,11 +1128,11 @@ static inline void vpv_ref2_generation(void)
         #endif
 
         #if VIENNA_CONTROL_RUNNING_ON == CLA_CORE
-        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*log(  (Np2*ILight2-ipv2) /(Np2*Io2*0.000001) +1  ) - Ns2*Rs2*ipv2 );
+        vpv_ref2 = (1+(Temp2-25)*BetaV2/100)*( (1.8146*Ns2)*logf(  (Np2*ILight2-ipv2) /(Np2*Io2*0.000001) +1  ) - Ns2*Rs2*ipv2 );
         #endif
 
-        if (vpv_ref2>((1+(Temp2-25)*BetaV2/100)*Ns2*45.78)){
-            vpv_ref2=((1+(Temp2-25)*BetaV2/100)*Ns2*45.78);
+        if (vpv_ref2 > ((1+(Temp2-25)*BetaV2/100)*Ns2*(float32_t)45.78) ){
+            vpv_ref2 = ((1+(Temp2-25)*BetaV2/100)*Ns2*(float32_t)45.78);
         }
         if (vpv_ref2<0.0) vpv_ref2=0.0;
     }
@@ -1129,7 +1184,8 @@ static inline void Fault_State(void)
     //Turn OFF Relay
     PowerRelay = OFF;
 */
-    setDISABLE_PWM();
+    setDISABLE_PWM1();
+    setDISABLE_PWM2();
     resetPOWER_RELAY();
 
     //Display fault msg
@@ -1249,7 +1305,8 @@ static inline void filter_signals2(void)
 static inline void ControlCode_PVEmu(void)
 {
     uint16_t duty1, duty2;
-    toggleTimeCheck();
+
+
     readCurrVolADCSignals();    //It takes 2.5usec
 //    VIENNA_readCurrVolADCSignals();
     filter_signals();
@@ -1257,28 +1314,67 @@ static inline void ControlCode_PVEmu(void)
 
 //        (*PowerControl_State_Ptr1)();   // jump to an Alpha state (void Monitor_Vdc,Idle_State,Slew_Control,Vpv_Control)
 
+    if (CONTROL_STATE==FAULT_STATE || CONTROL_STATE2==FAULT_STATE){
+        Fault_State();
+    }
+    else if (CONTROL_STATE==VDC_CHARGING || CONTROL_STATE2==VDC_CHARGING){
+        Vdc_Charging();
+    }
+    else {
 
-    switch (CONTROL_STATE) {    //switch-case adding 0.4usec to vpv_control1;
-        case VPV_CONTROL1:
-            Vpv_Control1();
-            break;
-        case VDC_CHARGING:
-            Vdc_Charging();
-            break;
-        case SLEW_CONTROL1:
-            Slew_Control1();
-            break;
-        case IDLE_STATE1:
-            Idle_State1();
-            break;
-        case DEACCELERATION1:
-            Deacceleration1();
-            break;
-        case FAULT_STATE:
-            Fault_State();
-             break;
-        default:
-            break;
+        switch (CONTROL_STATE) {    //switch-case adding 0.4usec to vpv_control1;
+            case VPV_CONTROL1:
+                Vpv_Control1();
+                break;
+/*
+            case VDC_CHARGING:
+                Vdc_Charging();
+                break;
+*/
+            case SLEW_CONTROL1:
+                Slew_Control1();
+                break;
+            case IDLE_STATE1:
+                Idle_State1();
+                break;
+            case DEACCELERATION1:
+                Deacceleration1();
+                break;
+/*
+            case FAULT_STATE:
+                Fault_State();
+                 break;
+*/
+            default:
+                break;
+        }
+
+        switch (CONTROL_STATE2) {    //switch-case adding 0.4usec to vpv_control1;
+            case VPV_CONTROL2:
+                Vpv_Control2();
+                break;
+/*
+            case VDC_CHARGING:
+                Vdc_Charging();
+                break;
+*/
+            case SLEW_CONTROL2:
+                Slew_Control2();
+                break;
+            case IDLE_STATE2:
+                Idle_State2();
+                break;
+            case DEACCELERATION2:
+                Deacceleration2();
+                break;
+/*
+            case FAULT_STATE:
+                Fault_State();
+                 break;
+*/
+            default:
+                break;
+        }
     }
 
 //ONLY FOR TESTING
@@ -1306,6 +1402,21 @@ static inline void ControlCode_PVEmu(void)
         duty1 =  (uint16_t) ( (float32_t) ((float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)) * (float32_t) fabsf((1.0-common_vars_duty1)) );   //LATER FEED CONSTANT VALUE FOR: VIENNA_PFC3PH_PWM_PERIOD / 2.0
 
         VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, duty1);
+
+//        EPwm1Regs.CMPA.bit.CMPA = EPwm1Regs.TBPRD - common_vars.duty1*(EPwm1Regs.TBPRD);
+    }
+
+
+    if (CONTROL_STATE2==VPV_CONTROL2  || CONTROL_STATE2==SLEW_CONTROL2 || CONTROL_STATE2==DEACCELERATION2) {
+        // PWM Driver for channel1
+        if (common_vars_duty2>0.6) common_vars_duty2 = 0.6;
+        if (common_vars_duty2<=0.0) common_vars_duty2 = 0.0;
+
+
+
+        duty2 =  (uint16_t) ( (float32_t) ((float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)) * (float32_t) fabsf((1.0-common_vars_duty2)) );   //LATER FEED CONSTANT VALUE FOR: VIENNA_PFC3PH_PWM_PERIOD / 2.0
+
+        VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, duty2);
 
 //        EPwm1Regs.CMPA.bit.CMPA = EPwm1Regs.TBPRD - common_vars.duty1*(EPwm1Regs.TBPRD);
     }
@@ -1345,24 +1456,32 @@ static inline void protections(void)
             VIENNA_boardStatus = vdc_undervoltage;
         }
 
-    else if( (VIENNA_vPV1Meas_pu > update_const_vpv_overvoltage_threshold) || (VIENNA_vPV2Meas_pu > 400.0) )
+    else if( (VIENNA_vPV1Meas_pu > update_const_vpv_overvoltage_threshold) || (VIENNA_vPV2Meas_pu > 500.0) )
     {
         EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
         EPWM_forceTripZoneEvent(EPWM2_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
         EPWM_forceTripZoneEvent(EPWM3_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
 
-        VIENNA_boardStatus = vpv_overvoltage;
+        VIENNA_boardStatus = vpv1_overvoltage;
     }
-    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL1_CUR))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
+    else if( (VIENNA_vPV2Meas_pu > update_const_vpv_overvoltage_threshold) || (VIENNA_vPV2Meas_pu > 500.0) )
+    {
+        EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
+        EPWM_forceTripZoneEvent(EPWM2_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
+        EPWM_forceTripZoneEvent(EPWM3_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
+
+        VIENNA_boardStatus = vpv2_overvoltage;
+    }
+    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL1_CUR_CMPSS_BASE))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
     {
         VIENNA_boardStatus = boardStatus_OverCurrentTrip_IL1;
     }
-    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL2_CUR))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
+    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL2_CUR_CMPSS_BASE))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
     {
         VIENNA_boardStatus = boardStatus_OverCurrentTrip_IL2;
     }
 
-    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL3_CUR))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
+    else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL3_CUR_CMPSS_BASE))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
     {
         VIENNA_boardStatus = boardStatus_OverCurrentTrip_IL3;
     }
@@ -1379,11 +1498,11 @@ static inline void protections(void)
 
     if (!(VIENNA_boardStatus == boardStatus_NoFault)){//&&(VIENNA_boardStatus != boardStatus_Idle)) {  //IT LOOKS LIKE LOGIC "NOT EQUAL TO" IS NOT WORKING IN CLA
 //        DisablePWM = SET;
-        setDISABLE_PWM();
+        setDISABLE_PWM1();
         CONTROL_STATE = FAULT_STATE;
         Screen_count = 9;
 //        LCD_ACTION = SCREEN9R1;
-        common_flag_clearTrip = 0;
+        common_flag_clearTripPWM1 = 0;
     }
 }
 

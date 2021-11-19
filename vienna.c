@@ -212,7 +212,8 @@ volatile uint16_t CONTROL_STATE2=0;
 
 //
 //struct COMMON_FLAG {
-    volatile uint16_t common_flag_clearTrip;
+    volatile uint16_t common_flag_clearTripPWM1;
+    volatile uint16_t common_flag_clearTripPWM2;
     volatile uint16_t common_flag_init_GlobalVariable;
 //};
 //#define COMMON_FLAG_DEFAULTS {0}
@@ -677,7 +678,8 @@ void initGlobalVariable(void)
     common_vars_duty1 = 0;
     common_vars_duty2 = 0;
 
-    common_flag_clearTrip = 0;
+    common_flag_clearTripPWM1 = 0;
+    common_flag_clearTripPWM2 = 0;
 //    common_flag_init_GlobalVariable = 0;
 
     il1_control_ref = 0;
