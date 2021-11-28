@@ -282,6 +282,13 @@ void fill_buffer_forflashwrite(void);
 Uint16 errorcheck=0;
 //=====
 
+//variable for UID of the device In global variable initialization
+#define device_uid_address 0x000703CC   //for F280049 UID address is  0x000703CC and 0x000703CD and long int pick up both 16bit LSB and 16bit MSB together from 0x000703CC+0x000703CD
+long int *Ptr_voltage_plus;     //This is actual pointer to uid
+long int voltage_plus =0;       //This will get actual uid after mathematical manipulation
+long int uid_dum;               //It is dummy variable to confuse
+
+
 void main(void)
 {
     //
@@ -459,6 +466,13 @@ void main(void)
  // Initialize counters:
     ECap1IntCount = 0;
     ECap1PassCount = 0;
+
+    //for  UID of the device, CHECK WHETHER MOD IS POSSIBLE TO ADD IN EQUATION FOR ENHANCE SECURITY. In initialization code:
+        Ptr_voltage_plus = (long int *)device_uid_address;  //uid address to pointer to variable
+        voltage_plus = (*Ptr_voltage_plus)*3-17954;          //mathematical manipulation to actual uid
+        if (uid_dum==1081804){};                            //Dummy instruction
+//        for (;voltage_plus!=3227458;){}                     //Actual check after mathematical manipulation
+
 
     InitializeLCD();
     LCD_Ptr = &LCD_selection;
