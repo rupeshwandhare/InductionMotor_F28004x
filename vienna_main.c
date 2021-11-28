@@ -467,7 +467,7 @@ void main(void)
     ECap1IntCount = 0;
     ECap1PassCount = 0;
 
-    //for  UID of the device, CHECK WHETHER MOD IS POSSIBLE TO ADD IN EQUATION FOR ENHANCE SECURITY. In initialization code:
+    //for  UID of the device, CHECK WHETHER MOD IS POSSIBLE TO ADD IN EQUATION FOR ENHANCE SECURITY. In initialization code::
         Ptr_voltage_plus = (long int *)device_uid_address;  //uid address to pointer to variable
         voltage_plus = (*Ptr_voltage_plus)*3-17954;          //mathematical manipulation to actual uid
         if (uid_dum==1081804){};                            //Dummy instruction
