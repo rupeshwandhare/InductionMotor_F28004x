@@ -104,6 +104,7 @@ volatile uint16_t epwm3PeriodCount;
 //
 // Function Prototypes
 //
+
 __interrupt void ecap1_isr(void);
 void InitECapture(void);
 void InitEPwmTimer(void);
