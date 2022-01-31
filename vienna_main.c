@@ -19,8 +19,6 @@
 // ALL RIGHTS RESERVED
 // $
 //#############################################################################
-
-
 //
 // the includes
 //
@@ -31,6 +29,8 @@
 #define MATH_TYPE FLOAT_MATH
 #include "IQmathLib.h"
 #include "CLAmath.h"
+
+
 
 
 //
