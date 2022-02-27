@@ -31,8 +31,6 @@
 #include "CLAmath.h"
 
 
-
-
 //
 // Include Flash API include file
 //
