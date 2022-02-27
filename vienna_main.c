@@ -19,12 +19,7 @@
 // ALL RIGHTS RESERVED
 // $
 //#############################################################################
-<<<<<<< HEAD
-=======
 
-
->>>>>>> branch 'master' of https://github.com/rupeshwandhare/HybridDCbusSERBF28004x.git
-//
 // the includes
 //
 #include "F28x_Project.h"
