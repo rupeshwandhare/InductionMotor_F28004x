@@ -22,6 +22,7 @@
 
 // the includes
 //
+
 #include "F28x_Project.h"
 #include "device.h"
 #include "driverlib.h"
@@ -102,6 +103,7 @@ volatile uint16_t epwm3PeriodCount;
 //
 // Function Prototypes
 //
+
 
 __interrupt void ecap1_isr(void);
 void InitECapture(void);
