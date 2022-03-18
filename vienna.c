@@ -432,12 +432,10 @@ SFRA_F32 VIENNA_sfra1;
 //
 // Variables used to calibrate measurement offsets
 //Offset filter coefficient K1: 0.05/(T+0.05);
-//
 float32_t VIENNA_k1 = 0.998;
 
 //
 //Offset filter coefficient K2: T/(T+0.05)
-//
 float32_t VIENNA_k2 = 0.001999;
 int16_t VIENNA_offsetCalCounter;
 float32_t VIENNA_offset165;
@@ -664,8 +662,7 @@ void VIENNA_globalVariablesInit(void)
 
 void initGlobalVariable(void)
 {
-    Screen_count = 1;
-/*
+ /*
     common_flag.clearTrip = 1;
     command.Clear_OCfault = 0;
     command.OnOffCh1=OFF;
@@ -869,49 +866,34 @@ void VIENNA_calibrateOffset()
 
     while(VIENNA_offsetCalCounter < 25000)
     {
-        if(VIENNA_HAL_getPWMInterruptFlag(
-                           VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE) == 1)
+        if(VIENNA_HAL_getPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE) == 1)
         {
-            if(VIENNA_offsetCalCounter > 1000)
+            if(VIENNA_offsetCalCounter > 1000)  //Leave initial 1000 samples for power supply to stabilize.
             {
                 //
-                // offset of the inductor current sense
+                // offset of the inductor current sense with filtering, //Offset filter coefficient K1: 0.05/(T+0.05); //Offset filter coefficient K2: T/(T+0.05)
                 //
                 VIENNA_iL1MeasOffset_pu = VIENNA_k1 * (VIENNA_iL1MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_IL1_FB_1 + VIENNA_IL1_FB_2 +
-                                VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4 )
-                                     * 0.25 * ADC_I_GAIN;
+                        VIENNA_k2 * (VIENNA_IL1_FB_1 + VIENNA_IL1_FB_2 + VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4) * 0.25 * ADC_I_GAIN;
                 VIENNA_iL2MeasOffset_pu = VIENNA_k1 * (VIENNA_iL2MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_IL2_FB_1 + VIENNA_IL2_FB_2 +
-                                VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4)
-                                   * 0.25 * ADC_I_GAIN;
+                        VIENNA_k2 * (VIENNA_IL2_FB_1 + VIENNA_IL2_FB_2 + VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4) * 0.25 * ADC_I_GAIN;
                 VIENNA_iPV1MeasOffset_pu = VIENNA_k1 * (VIENNA_iPV1MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_IPV1_FB_1 + VIENNA_IPV1_FB_2 +
-                                VIENNA_IPV1_FB_3 + VIENNA_IPV1_FB_4)
-                                  * 0.25 * ADC_I_GAIN;
+                        VIENNA_k2 * (VIENNA_IPV1_FB_1 + VIENNA_IPV1_FB_2 + VIENNA_IPV1_FB_3 + VIENNA_IPV1_FB_4) * 0.25 * ADC_I_GAIN;
                 VIENNA_iPV2MeasOffset_pu = VIENNA_k1 * (VIENNA_iPV2MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_IPV2_FB_1 + VIENNA_IPV2_FB_2 +
-                                VIENNA_IPV2_FB_3 + VIENNA_IPV2_FB_4)
-                                  * 0.25 * ADC_I_GAIN;
+                        VIENNA_k2 * (VIENNA_IPV2_FB_1 + VIENNA_IPV2_FB_2 + VIENNA_IPV2_FB_3 + VIENNA_IPV2_FB_4) * 0.25 * ADC_I_GAIN;
 
                 //
-                // offset of the voltage sense
+                // offset of the voltage sense with filtering, //Offset filter coefficient K1: 0.05/(T+0.05); //Offset filter coefficient K2: T/(T+0.05)
                 //
                 VIENNA_vPV1MeasOffset_pu = VIENNA_k1 * (VIENNA_vPV1MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_VPV1_FB_1 + VIENNA_VPV1_FB_2 +
-                                VIENNA_VPV1_FB_3 + VIENNA_VPV1_FB_4)
-                                  * 0.25 * ADC_VPV_GAIN;
+                        VIENNA_k2 * (VIENNA_VPV1_FB_1 + VIENNA_VPV1_FB_2 + VIENNA_VPV1_FB_3 + VIENNA_VPV1_FB_4) * 0.25 * ADC_VPV_GAIN;
                 VIENNA_vPV2MeasOffset_pu = VIENNA_k1 * (VIENNA_vPV2MeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_VPV2_FB_1 + VIENNA_VPV2_FB_2 +
-                                VIENNA_VPV2_FB_3 + VIENNA_VPV2_FB_4)
-                                  * 0.25 * ADC_VPV_GAIN;
+                        VIENNA_k2 * (VIENNA_VPV2_FB_1 + VIENNA_VPV2_FB_2 + VIENNA_VPV2_FB_3 + VIENNA_VPV2_FB_4) * 0.25 * ADC_VPV_GAIN;
 
 
 /*
                 VIENNA_vDCMeasOffset_pu = VIENNA_k1 * (VIENNA_vDCMeasOffset_pu) +
-                        VIENNA_k2 * (VIENNA_VDC_FB_1 + VIENNA_VDC_FB_2 +
-                                VIENNA_VDC_FB_3 + VIENNA_VDC_FB_4)
-                                  * 0.25 * ADC_VDC_GAIN;
+                        VIENNA_k2 * (VIENNA_VDC_FB_1 + VIENNA_VDC_FB_2 + VIENNA_VDC_FB_3 + VIENNA_VDC_FB_4) * 0.25 * ADC_VDC_GAIN;
 */
 
             }
@@ -921,8 +903,7 @@ void VIENNA_calibrateOffset()
 */
             VIENNA_vDCMeasOffset_pu = 0.0;
 
-            VIENNA_HAL_clearPWMInterruptFlag(
-                                   VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
+            VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
             VIENNA_offsetCalCounter++;
         }
     }

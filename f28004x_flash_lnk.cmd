@@ -21,8 +21,8 @@ PAGE 0 :
    /* BANK 0 */
    FLASH_BANK0_SEC0  : origin = 0x080002, length = 0x000FFE	/* on-chip Flash */
    FLASH_BANK0_SEC1  : origin = 0x081000, length = 0x001000	/* on-chip Flash */
-   FLASH_BANK0_SEC2  : origin = 0x082000, length = 0x001D00	/* on-chip Flash */
-   FLASH_BANK0_SEC3  : origin = 0x083D00, length = 0x000300	/* on-chip Flash */
+   FLASH_BANK0_SEC2  : origin = 0x082000, length = 0x001F00	/* on-chip Flash */
+   FLASH_BANK0_SEC3  : origin = 0x083F00, length = 0x000100	/* on-chip Flash */
    FLASH_BANK0_SEC4  : origin = 0x084000, length = 0x001000	/* on-chip Flash */
    FLASH_BANK0_SEC5  : origin = 0x085000, length = 0x001000	/* on-chip Flash */
    FLASH_BANK0_SEC6  : origin = 0x086000, length = 0x001000	/* on-chip Flash */

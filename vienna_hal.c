@@ -61,12 +61,9 @@ void VIENNA_HAL_setupDevice(void)
     //
     // Initialize timer period to maximum
     //
-    CPUTimer_setPeriod(CPUTIMER0_BASE,
-                       DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER0_FREQ_HZ );
-    CPUTimer_setPeriod(CPUTIMER1_BASE,
-                       DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER1_FREQ_HZ );
-    CPUTimer_setPeriod(CPUTIMER2_BASE,
-                       DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER2_FREQ_HZ );
+    CPUTimer_setPeriod(CPUTIMER0_BASE, DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER0_FREQ_HZ );
+    CPUTimer_setPeriod(CPUTIMER1_BASE, DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER1_FREQ_HZ );
+    CPUTimer_setPeriod(CPUTIMER2_BASE, DEVICE_SYSCLK_FREQ / VIENNA_CPU_TIMER2_FREQ_HZ );
 
     //
     // Initialize pre-scale counter to divide by 1 (SYSCLKOUT)
@@ -81,12 +78,10 @@ void VIENNA_HAL_setupDevice(void)
     CPUTimer_stopTimer(CPUTIMER0_BASE);
     CPUTimer_stopTimer(CPUTIMER1_BASE);
     CPUTimer_stopTimer(CPUTIMER2_BASE);
-    CPUTimer_setEmulationMode(CPUTIMER0_BASE,
-                              CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
-    CPUTimer_setEmulationMode(CPUTIMER1_BASE,
-                              CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
-    CPUTimer_setEmulationMode(CPUTIMER2_BASE,
-                              CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
+
+    CPUTimer_setEmulationMode(CPUTIMER0_BASE, CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
+    CPUTimer_setEmulationMode(CPUTIMER1_BASE, CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
+    CPUTimer_setEmulationMode(CPUTIMER2_BASE, CPUTIMER_EMULATIONMODE_STOPAFTERNEXTDECREMENT);
 
     //
     // Reload all counter register with period value
@@ -101,115 +96,10 @@ void VIENNA_HAL_setupDevice(void)
 
 }
 
-//
 // PWM Related
 // configure3phViennaPWM()
 //
-/*
-void VIENNA_HAL_setupPWM(uint32_t base1, uint32_t base2, uint32_t base3,
-                           uint16_t pwm_period_ticks)
-{
-    VIENNA_HAL_configurePWMUpDwnCnt(base1, pwm_period_ticks);
-    VIENNA_HAL_configurePWMUpDwnCnt(base2, pwm_period_ticks);
-    VIENNA_HAL_configurePWMUpDwnCnt(base3, pwm_period_ticks);
-
-    //
-    // configure PWM 1 as master and Phase 2, 3 as slaves and
-    // let it pass the sync in pulse from PWM1
-    //
-    EPWM_disablePhaseShiftLoad(base1);
-    EPWM_setSyncOutPulseMode(base1, EPWM_SYNC_OUT_PULSE_ON_COUNTER_ZERO);
-
-
-
-    EPWM_enablePhaseShiftLoad(base2);
-    EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-
-
-
-    EPWM_setPhaseShift(base2, 2);
-    EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
-
-    EPWM_enablePhaseShiftLoad(base3);
-
-    EPWM_setSyncOutPulseMode(base3, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-
-
-
-    EPWM_setPhaseShift(base3, 2);
-    EPWM_setCountModeAfterSync(base3, EPWM_COUNT_MODE_UP_AFTER_SYNC);
-
-}
-
-//
-// configurePWM1chUpDwnCnt()
-//
-void VIENNA_HAL_configurePWMUpDwnCnt(uint32_t base1, uint16_t pwm_period_ticks)
-{
-    //
-    // Time Base SubModule Registers
-    //
-    EPWM_setPeriodLoadMode(base1, EPWM_PERIOD_SHADOW_LOAD);
-    EPWM_setTimeBasePeriod(base1, pwm_period_ticks >> 1);
-    EPWM_setTimeBaseCounter(base1, 0);
-    EPWM_setPhaseShift(base1, 0);
-    EPWM_setTimeBaseCounterMode(base1, EPWM_COUNTER_MODE_UP_DOWN);
-    EPWM_setClockPrescaler(base1, EPWM_CLOCK_DIVIDER_1, EPWM_HSCLOCK_DIVIDER_1);
-
-    //
-    // Counter Compare Submodule Registers
-    // set duty 0% initially
-    //
-    EPWM_setCounterCompareValue(base1, EPWM_COUNTER_COMPARE_A,
-                                pwm_period_ticks >> 1);
-    EPWM_setCounterCompareShadowLoadMode(base1, EPWM_COUNTER_COMPARE_A,
-                                       EPWM_COMP_LOAD_ON_CNTR_ZERO);
-
-    //
-    // Action Qualifier SubModule Registers
-    // CTR = CMPA@UP , set to 1
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_HIGH,
-                                    EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);
-
-    //
-    // CTR = CMPA@Down , set to 0
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW,
-                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);
-
-    //
-    // CTR = 0 , set to 0
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW,
-                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);
-
-    //
-    // CTR = CMPA@UP , set to 1
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_HIGH,
-                                    EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);
-
-    //
-    // CTR = CMPA@Down , set to 0
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW,
-                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);
-
-    //
-    // CTR = 0 , set to 0
-    //
-    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW,
-                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);
-
-}
-*/
-
-// PWM Related
-// configure3phViennaPWM()
-//
-void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3,
-                           uint16_t pwm_period_ticks, uint16_t pwm_dbred_ticks, uint16_t pwm_dbfed_ticks)
+void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3, uint16_t pwm_period_ticks, uint16_t pwm_dbred_ticks, uint16_t pwm_dbfed_ticks)
 {
     configurePWMUpDwnCnt(base1, pwm_period_ticks, pwm_dbred_ticks, pwm_dbfed_ticks);
     configurePWMUpDwnCnt(base2, pwm_period_ticks, pwm_dbred_ticks, pwm_dbfed_ticks);
@@ -254,10 +144,8 @@ void configurePWMUpDwnCnt(uint32_t base1, uint16_t pwm_period_ticks, uint16_t pw
     // Counter Compare Submodule Registers
     // set duty 0% initially
     //
-    EPWM_setCounterCompareValue(base1, EPWM_COUNTER_COMPARE_A,
-                                pwm_period_ticks >> 1);
-    EPWM_setCounterCompareShadowLoadMode(base1, EPWM_COUNTER_COMPARE_A,
-                                       EPWM_COMP_LOAD_ON_CNTR_ZERO);
+    EPWM_setCounterCompareValue(base1, EPWM_COUNTER_COMPARE_A, pwm_period_ticks >> 1);
+    EPWM_setCounterCompareShadowLoadMode(base1, EPWM_COUNTER_COMPARE_A, EPWM_COMP_LOAD_ON_CNTR_ZERO);
 
     //
     // Action Qualifier SubModule Registers
@@ -291,35 +179,34 @@ void configurePWMUpDwnCnt(uint32_t base1, uint16_t pwm_period_ticks, uint16_t pw
 }
 
 
-
 //
 // setPinAsPWM()
 //
 void VIENNA_HAL_setPinsAsPWM()
 {
 
-    GPIO_writePin(VIENNA_HIGH_FREQ_PWM1_H_GPIO, 0);
+    GPIO_writePin(VIENNA_HIGH_FREQ_PWM1_H_GPIO, 0); //Initial value=0 for gpio pin
     GPIO_writePin(VIENNA_HIGH_FREQ_PWM1_L_GPIO, 0);
     GPIO_writePin(VIENNA_HIGH_FREQ_PWM2_H_GPIO, 0);
     GPIO_writePin(VIENNA_HIGH_FREQ_PWM2_L_GPIO, 0);
     GPIO_writePin(VIENNA_HIGH_FREQ_PWM3_H_GPIO, 0);
     GPIO_writePin(VIENNA_HIGH_FREQ_PWM3_L_GPIO, 0);
 
-    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM1_H_GPIO , GPIO_DIR_MODE_OUT);
-    GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM1_H_GPIO , GPIO_PIN_TYPE_STD);
-    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM1_H_GPIO_PIN_CONFIG );
+    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM1_H_GPIO , GPIO_DIR_MODE_OUT);  //set gpio as outpin
+    GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM1_H_GPIO , GPIO_PIN_TYPE_STD);   //as standard pin, it can be pullup, pulldown or floating, CHECK THIS
+    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM1_H_GPIO_PIN_CONFIG );  //set as PWM pin to GPIO-0
 
-    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM1_L_GPIO, GPIO_DIR_MODE_OUT);
+    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM1_L_GPIO, GPIO_DIR_MODE_OUT);  //set gpio as outpin
     GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM1_L_GPIO, GPIO_PIN_TYPE_STD);
-    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM1_L_GPIO_PIN_CONFIG );
+    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM1_L_GPIO_PIN_CONFIG );  //set as PWM pin to GPIO-1
 
-    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM2_H_GPIO, GPIO_DIR_MODE_OUT);
+    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM2_H_GPIO, GPIO_DIR_MODE_OUT);  //set gpio as outpin
     GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM2_H_GPIO, GPIO_PIN_TYPE_STD);
-    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM2_H_GPIO_PIN_CONFIG);
+    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM2_H_GPIO_PIN_CONFIG);   //set as PWM pin to GPIO-2
 
-    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM2_L_GPIO, GPIO_DIR_MODE_OUT);
+    GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM2_L_GPIO, GPIO_DIR_MODE_OUT);  //set gpio as outpin
     GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM2_L_GPIO, GPIO_PIN_TYPE_STD);
-    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM2_L_GPIO_PIN_CONFIG);
+    GPIO_setPinConfig(VIENNA_HIGH_FREQ_PWM2_L_GPIO_PIN_CONFIG);   //set as PWM pin to GPIO-2
 
     GPIO_setDirectionMode(VIENNA_HIGH_FREQ_PWM3_H_GPIO, GPIO_DIR_MODE_OUT);
     GPIO_setPadConfig(VIENNA_HIGH_FREQ_PWM3_H_GPIO, GPIO_PIN_TYPE_STD);
@@ -353,300 +240,22 @@ void VIENNA_HAL_setupTriggerForADC(uint32_t base)
 {
     //
     // Select SOC from counter at ctr = CMPBD
-    //
     EPWM_setADCTriggerSource(base, EPWM_SOC_A, EPWM_SOC_TBCTR_U_CMPB );
 
-    //
     // write value to CMPB
-    //
     EPWM_setCounterCompareValue(base, EPWM_COUNTER_COMPARE_B,
            ((uint16_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD * (float32_t)0.5)
-           - (uint16_t)( (float32_t)VIENNA_IL1_ACQPS_SYS_CLKS * (float32_t)6.0
-     * (float32_t)(VIENNA_PWMSYSCLOCK_FREQ_HZ / (float32_t)VIENNA_CPU_SYS_CLOCK_FREQ_HZ) )
-           - (uint16_t)( (float32_t) VIENNA_ADC_CONV_TIME
-               * (float32_t) VIENNA_PWMSYSCLOCK_FREQ_HZ * (float32_t)6.0 ) ) );
+           - (uint16_t)( (float32_t)VIENNA_IL1_ACQPS_SYS_CLKS * (float32_t)6.0 * (float32_t)(VIENNA_PWMSYSCLOCK_FREQ_HZ / (float32_t)VIENNA_CPU_SYS_CLOCK_FREQ_HZ) )
+           - (uint16_t)( (float32_t) VIENNA_ADC_CONV_TIME * (float32_t) VIENNA_PWMSYSCLOCK_FREQ_HZ * (float32_t)6.0 ) ) );
 
-    //
     // Generate pulse on 1st even
-    //
     EPWM_setADCTriggerEventPrescale(base, EPWM_SOC_A, 1);
 
-    //
     // Enable SOC on A group
-    //
     EPWM_enableADCTrigger(base, EPWM_SOC_A);
 
 }
-/*
 
-//
-// ADC Related
-// setupADC()
-//
-void VIENNA_HAL_setupADC(void)
-{
-    ADC_setVREF(ADCA_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
-    ADC_setVREF(ADCB_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
-    ADC_setVREF(ADCC_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
-
-
-    //
-    // set ADCCLK divider to /4
-    //
-    ADC_setPrescaler(ADCA_BASE, ADC_CLK_DIV_2_0);
-
-
-
-    //
-    // Set pulse positions to late
-    //
-    ADC_setInterruptPulseMode(ADCA_BASE, ADC_PULSE_END_OF_CONV);
-
-    //
-    // power up the ADC
-    //
-    ADC_enableConverter(ADCA_BASE);
-
-    //
-    //set ADCCLK divider to /4
-    //
-    ADC_setPrescaler(ADCB_BASE, ADC_CLK_DIV_2_0);
-
-
-
-    //
-    // Set pulse positions to late
-    //
-    ADC_setInterruptPulseMode(ADCB_BASE, ADC_PULSE_END_OF_CONV);
-
-    //
-    // power up the ADC
-    //
-    ADC_enableConverter(ADCB_BASE);
-
-    //
-    //set ADCCLK divider to /4
-    //
-    ADC_setPrescaler(ADCC_BASE, ADC_CLK_DIV_2_0);
-
-
-
-    //
-    // Set pulse positions to late
-    //
-    ADC_setInterruptPulseMode(ADCC_BASE, ADC_PULSE_END_OF_CONV);
-
-    //
-    // power up the ADC
-    //
-    ADC_enableConverter(ADCC_BASE);
-
-
-
-    DEVICE_DELAY_US(1000);
-
-    //
-    // setup conversion on ADCA for inverter current and voltages
-    // iL1Meas
-    //
-    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_1,
-                 VIENNA_IL1_ADC_TRIG_SOURCE,
-                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
-
-    //
-    // iL2Meas
-    //
-    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_1,
-                 VIENNA_IL2_ADC_TRIG_SOURCE,
-                 VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
-
-    //
-    // iL3Meas
-    //
-    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_1,
-                 VIENNA_IL3_ADC_TRIG_SOURCE,
-                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
-
-    //
-    // iL1Meas2
-    //
-    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_2,
-                 VIENNA_IL1_ADC_TRIG_SOURCE,
-                 VIENNA_IL1_ADC_PIN,  VIENNA_IL1_ACQPS_SYS_CLKS);
-
-    //
-    // iL2Meas2
-    //
-    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_2,
-                 VIENNA_IL2_ADC_TRIG_SOURCE,
-                 VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
-
-    //
-    // iL3Meas2
-    //
-    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_2,
-                 VIENNA_IL3_ADC_TRIG_SOURCE,
-                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
-
-    //
-    // iL1Meas3
-    //
-    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_3,
-                 VIENNA_IL1_ADC_TRIG_SOURCE,
-                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
-
-    //
-    // iL2Meas3
-    //
-    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_3,
-                 VIENNA_IL2_ADC_TRIG_SOURCE,
-                 VIENNA_IL2_ADC_PIN, VIENNA_IL2_ACQPS_SYS_CLKS);
-
-    //
-    // iL3Meas3
-    //
-    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_3,
-                 VIENNA_IL3_ADC_TRIG_SOURCE,
-                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
-
-    //
-    // iL1Meas4
-    //
-    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_4,
-                 VIENNA_IL1_ADC_TRIG_SOURCE,
-                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
-
-    //
-    // iL2Meas4
-    //
-    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_4,
-                 VIENNA_IL2_ADC_TRIG_SOURCE,
-                 VIENNA_IL2_ADC_PIN, VIENNA_IL2_ACQPS_SYS_CLKS);
-
-    //
-    // iL3Meas4
-    //
-    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_4,
-                 VIENNA_IL3_ADC_TRIG_SOURCE,
-                 VIENNA_IL3_ADC_PIN, VIENNA_IL3_ACQPS_SYS_CLKS);
-
-    //
-    // v1Meas
-    //
-    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_1,
-                 VIENNA_V1_ADC_TRIG_SOURCE,
-                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
-
-    //
-    // v2Meas
-    //
-    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_1,
-                 VIENNA_V2_ADC_TRIG_SOURCE,
-                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
-
-    //
-    // v3Meas
-    //
-    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_1,
-                 VIENNA_V3_ADC_TRIG_SOURCE,
-                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
-
-    //
-    // v1Meas2
-    //
-    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_2,
-                 VIENNA_V1_ADC_TRIG_SOURCE,
-                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
-
-    //
-    // v2Meas2
-    //
-    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_2,
-                 VIENNA_V2_ADC_TRIG_SOURCE,
-                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
-
-    //
-    // v3Meas2
-    //
-    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_2,
-                 VIENNA_V3_ADC_TRIG_SOURCE,
-                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
-
-    //
-    // v1Meas3
-    //
-    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_3,
-                 VIENNA_V1_ADC_TRIG_SOURCE,
-                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
-
-    //
-    // v2Meas3
-    //
-    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_3,
-                 VIENNA_V2_ADC_TRIG_SOURCE,
-                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
-
-    //
-    // v3Meas3
-    //
-    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_3,
-                 VIENNA_V3_ADC_TRIG_SOURCE,
-                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
-
-    //
-    // v1Meas4
-    //
-    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_4,
-                 VIENNA_V1_ADC_TRIG_SOURCE,
-                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
-
-    //
-    // v2Meas4
-    //
-    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_4,
-                 VIENNA_V2_ADC_TRIG_SOURCE,
-                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
-
-    //
-    // v3Meas4
-    //
-    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_4,
-                 VIENNA_V3_ADC_TRIG_SOURCE,
-                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
-
-    //
-    // vBusMeas
-    //
-    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_1,
-                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
-                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_2,
-                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
-                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_3,
-                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
-                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_4,
-                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
-                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
-
-    //
-    // vBusMidMeas
-    //
-    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_1,
-                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
-                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_2,
-                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
-                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_3,
-                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
-                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
-    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_4,
-                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
-                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
-}
-*/
 
 // setupADC()
 //
@@ -685,7 +294,7 @@ void setupADC(void)
     DEVICE_DELAY_US(1000);
 
     //
-    // setup conversion on ADCA for inverter current and voltages
+    // ADC channel and module mappings; SOC number, Trigger selections like PWM, Acquisition window; setup conversion on ADCA for inverter current and voltages
     // iL1Meas1
     ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_1,
                  VIENNA_IL1_ADC_TRIG_SOURCE,
@@ -995,9 +604,7 @@ void VIENNA_HAL_setupCMPSS(uint32_t base1, float32_t current_limit,
 //
 // setupBoardProtection()
 //
-void VIENNA_HAL_setupBoardProtection(uint32_t base1, uint32_t base2,
-                                     uint32_t base3,
-                          float32_t current_limit, float32_t current_max_sense)
+void VIENNA_HAL_setupBoardProtection(uint32_t base1, uint32_t base2, uint32_t base3, float32_t current_limit, float32_t current_max_sense)
 {
 
     //
@@ -1568,3 +1175,379 @@ void VIENNA_HAL_setupCLA(void)
 #endif
 
 }
+
+
+/*
+
+//
+// ADC Related
+// setupADC()
+//
+void VIENNA_HAL_setupADC(void)
+{
+    ADC_setVREF(ADCA_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
+    ADC_setVREF(ADCB_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
+    ADC_setVREF(ADCC_BASE, ADC_REFERENCE_INTERNAL, ADC_REFERENCE_3_3V);
+
+
+    //
+    // set ADCCLK divider to /4
+    //
+    ADC_setPrescaler(ADCA_BASE, ADC_CLK_DIV_2_0);
+
+
+
+    //
+    // Set pulse positions to late
+    //
+    ADC_setInterruptPulseMode(ADCA_BASE, ADC_PULSE_END_OF_CONV);
+
+    //
+    // power up the ADC
+    //
+    ADC_enableConverter(ADCA_BASE);
+
+    //
+    //set ADCCLK divider to /4
+    //
+    ADC_setPrescaler(ADCB_BASE, ADC_CLK_DIV_2_0);
+
+
+
+    //
+    // Set pulse positions to late
+    //
+    ADC_setInterruptPulseMode(ADCB_BASE, ADC_PULSE_END_OF_CONV);
+
+    //
+    // power up the ADC
+    //
+    ADC_enableConverter(ADCB_BASE);
+
+    //
+    //set ADCCLK divider to /4
+    //
+    ADC_setPrescaler(ADCC_BASE, ADC_CLK_DIV_2_0);
+
+
+
+    //
+    // Set pulse positions to late
+    //
+    ADC_setInterruptPulseMode(ADCC_BASE, ADC_PULSE_END_OF_CONV);
+
+    //
+    // power up the ADC
+    //
+    ADC_enableConverter(ADCC_BASE);
+
+
+
+    DEVICE_DELAY_US(1000);
+
+    //
+    // setup conversion on ADCA for inverter current and voltages
+    // iL1Meas
+    //
+    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_1,
+                 VIENNA_IL1_ADC_TRIG_SOURCE,
+                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
+
+    //
+    // iL2Meas
+    //
+    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_1,
+                 VIENNA_IL2_ADC_TRIG_SOURCE,
+                 VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+
+    //
+    // iL3Meas
+    //
+    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_1,
+                 VIENNA_IL3_ADC_TRIG_SOURCE,
+                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
+
+    //
+    // iL1Meas2
+    //
+    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_2,
+                 VIENNA_IL1_ADC_TRIG_SOURCE,
+                 VIENNA_IL1_ADC_PIN,  VIENNA_IL1_ACQPS_SYS_CLKS);
+
+    //
+    // iL2Meas2
+    //
+    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_2,
+                 VIENNA_IL2_ADC_TRIG_SOURCE,
+                 VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+
+    //
+    // iL3Meas2
+    //
+    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_2,
+                 VIENNA_IL3_ADC_TRIG_SOURCE,
+                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
+
+    //
+    // iL1Meas3
+    //
+    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_3,
+                 VIENNA_IL1_ADC_TRIG_SOURCE,
+                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
+
+    //
+    // iL2Meas3
+    //
+    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_3,
+                 VIENNA_IL2_ADC_TRIG_SOURCE,
+                 VIENNA_IL2_ADC_PIN, VIENNA_IL2_ACQPS_SYS_CLKS);
+
+    //
+    // iL3Meas3
+    //
+    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_3,
+                 VIENNA_IL3_ADC_TRIG_SOURCE,
+                 VIENNA_IL3_ADC_PIN,  VIENNA_IL3_ACQPS_SYS_CLKS);
+
+    //
+    // iL1Meas4
+    //
+    ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_4,
+                 VIENNA_IL1_ADC_TRIG_SOURCE,
+                 VIENNA_IL1_ADC_PIN, VIENNA_IL1_ACQPS_SYS_CLKS);
+
+    //
+    // iL2Meas4
+    //
+    ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_4,
+                 VIENNA_IL2_ADC_TRIG_SOURCE,
+                 VIENNA_IL2_ADC_PIN, VIENNA_IL2_ACQPS_SYS_CLKS);
+
+    //
+    // iL3Meas4
+    //
+    ADC_setupSOC(VIENNA_IL3_ADC_MODULE, VIENNA_IL3_ADC_SOC_NO_4,
+                 VIENNA_IL3_ADC_TRIG_SOURCE,
+                 VIENNA_IL3_ADC_PIN, VIENNA_IL3_ACQPS_SYS_CLKS);
+
+    //
+    // v1Meas
+    //
+    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_1,
+                 VIENNA_V1_ADC_TRIG_SOURCE,
+                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
+
+    //
+    // v2Meas
+    //
+    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_1,
+                 VIENNA_V2_ADC_TRIG_SOURCE,
+                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
+
+    //
+    // v3Meas
+    //
+    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_1,
+                 VIENNA_V3_ADC_TRIG_SOURCE,
+                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
+
+    //
+    // v1Meas2
+    //
+    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_2,
+                 VIENNA_V1_ADC_TRIG_SOURCE,
+                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
+
+    //
+    // v2Meas2
+    //
+    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_2,
+                 VIENNA_V2_ADC_TRIG_SOURCE,
+                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
+
+    //
+    // v3Meas2
+    //
+    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_2,
+                 VIENNA_V3_ADC_TRIG_SOURCE,
+                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
+
+    //
+    // v1Meas3
+    //
+    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_3,
+                 VIENNA_V1_ADC_TRIG_SOURCE,
+                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
+
+    //
+    // v2Meas3
+    //
+    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_3,
+                 VIENNA_V2_ADC_TRIG_SOURCE,
+                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
+
+    //
+    // v3Meas3
+    //
+    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_3,
+                 VIENNA_V3_ADC_TRIG_SOURCE,
+                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
+
+    //
+    // v1Meas4
+    //
+    ADC_setupSOC(VIENNA_V1_ADC_MODULE, VIENNA_V1_ADC_SOC_NO_4,
+                 VIENNA_V1_ADC_TRIG_SOURCE,
+                 VIENNA_V1_ADC_PIN, VIENNA_V1_ACQPS_SYS_CLKS);
+
+    //
+    // v2Meas4
+    //
+    ADC_setupSOC(VIENNA_V2_ADC_MODULE, VIENNA_V2_ADC_SOC_NO_4,
+                 VIENNA_V2_ADC_TRIG_SOURCE,
+                 VIENNA_V2_ADC_PIN, VIENNA_V2_ACQPS_SYS_CLKS);
+
+    //
+    // v3Meas4
+    //
+    ADC_setupSOC(VIENNA_V3_ADC_MODULE, VIENNA_V3_ADC_SOC_NO_4,
+                 VIENNA_V3_ADC_TRIG_SOURCE,
+                 VIENNA_V3_ADC_PIN, VIENNA_V3_ACQPS_SYS_CLKS);
+
+    //
+    // vBusMeas
+    //
+    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_1,
+                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
+                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_2,
+                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
+                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_3,
+                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
+                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSPM_ADC_MODULE, VIENNA_VBUSPM_ADC_SOC_NO_4,
+                 VIENNA_VBUSPM_ADC_TRIG_SOURCE, VIENNA_VBUSPM_ADC_PIN,
+                 VIENNA_VBUSPM_ACQPS_SYS_CLKS);
+
+    //
+    // vBusMidMeas
+    //
+    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_1,
+                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
+                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_2,
+                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
+                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_3,
+                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
+                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
+    ADC_setupSOC(VIENNA_VBUSMN_ADC_MODULE, VIENNA_VBUSMN_ADC_SOC_NO_4,
+                 VIENNA_VBUSMN_ADC_TRIG_SOURCE, VIENNA_VBUSMN_ADC_PIN,
+                 VIENNA_VBUSMN_ACQPS_SYS_CLKS);
+}
+*/
+
+//
+// PWM Related
+// configure3phViennaPWM()
+//
+/*
+void VIENNA_HAL_setupPWM(uint32_t base1, uint32_t base2, uint32_t base3,
+                           uint16_t pwm_period_ticks)
+{
+    VIENNA_HAL_configurePWMUpDwnCnt(base1, pwm_period_ticks);
+    VIENNA_HAL_configurePWMUpDwnCnt(base2, pwm_period_ticks);
+    VIENNA_HAL_configurePWMUpDwnCnt(base3, pwm_period_ticks);
+
+    //
+    // configure PWM 1 as master and Phase 2, 3 as slaves and
+    // let it pass the sync in pulse from PWM1
+    //
+    EPWM_disablePhaseShiftLoad(base1);
+    EPWM_setSyncOutPulseMode(base1, EPWM_SYNC_OUT_PULSE_ON_COUNTER_ZERO);
+
+
+
+    EPWM_enablePhaseShiftLoad(base2);
+    EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
+
+
+
+    EPWM_setPhaseShift(base2, 2);
+    EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
+
+    EPWM_enablePhaseShiftLoad(base3);
+
+    EPWM_setSyncOutPulseMode(base3, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
+
+
+
+    EPWM_setPhaseShift(base3, 2);
+    EPWM_setCountModeAfterSync(base3, EPWM_COUNT_MODE_UP_AFTER_SYNC);
+
+}
+
+//
+// configurePWM1chUpDwnCnt()
+//
+void VIENNA_HAL_configurePWMUpDwnCnt(uint32_t base1, uint16_t pwm_period_ticks)
+{
+    //
+    // Time Base SubModule Registers
+    //
+    EPWM_setPeriodLoadMode(base1, EPWM_PERIOD_SHADOW_LOAD);
+    EPWM_setTimeBasePeriod(base1, pwm_period_ticks >> 1);
+    EPWM_setTimeBaseCounter(base1, 0);
+    EPWM_setPhaseShift(base1, 0);
+    EPWM_setTimeBaseCounterMode(base1, EPWM_COUNTER_MODE_UP_DOWN);
+    EPWM_setClockPrescaler(base1, EPWM_CLOCK_DIVIDER_1, EPWM_HSCLOCK_DIVIDER_1);
+
+    //
+    // Counter Compare Submodule Registers
+    // set duty 0% initially
+    //
+    EPWM_setCounterCompareValue(base1, EPWM_COUNTER_COMPARE_A,
+                                pwm_period_ticks >> 1);
+    EPWM_setCounterCompareShadowLoadMode(base1, EPWM_COUNTER_COMPARE_A,
+                                       EPWM_COMP_LOAD_ON_CNTR_ZERO);
+
+    //
+    // Action Qualifier SubModule Registers
+    // CTR = CMPA@UP , set to 1
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_HIGH,
+                                    EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);
+
+    //
+    // CTR = CMPA@Down , set to 0
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW,
+                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);
+
+    //
+    // CTR = 0 , set to 0
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW,
+                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);
+
+    //
+    // CTR = CMPA@UP , set to 1
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_HIGH,
+                                    EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);
+
+    //
+    // CTR = CMPA@Down , set to 0
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW,
+                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_DOWN_CMPA);
+
+    //
+    // CTR = 0 , set to 0
+    //
+    EPWM_setActionQualifierAction(base1, EPWM_AQ_OUTPUT_B, EPWM_AQ_OUTPUT_LOW,
+                                        EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO);
+
+}
+*/

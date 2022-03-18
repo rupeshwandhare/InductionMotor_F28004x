@@ -1438,6 +1438,7 @@ static inline void protections(void)
     }
     else if(VIENNA_vDCMeas_pu > 750.0)
 */
+/*
 
     if(VIENNA_vDCMeas_pu > 750.0)
     {
@@ -1504,6 +1505,7 @@ static inline void protections(void)
 //        LCD_ACTION = SCREEN9R1;
         common_flag_clearTripPWM1 = 0;
     }
+*/
 }
 
 
