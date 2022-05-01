@@ -24,6 +24,28 @@ char fArray[4];
 float f1 = -3.141592;
 float f2 = 0;
 
+//--------
+uint16_t sharenow=0;
+unsigned char byteArr[6];
+
+unsigned char type_exchange;
+unsigned char index_var;
+unsigned char index_parameter;
+float transmitValue;
+
+// union Float to handle casting of byte arrays to float
+typedef union _Float{
+    float f;
+    unsigned long bytes;
+} Float;
+
+Float receivedValue;
+
+unsigned char detect_parameter_transfer;
+unsigned char byte[4];
+
+
+//-------
 
 void InitializeSCI(void)
 {
@@ -78,6 +100,8 @@ void InitializeSCI(void)
      //
      SCI_lockAutobaud(SCIA_BASE);
  #endif
+
+     Float receivedValue;
 
      //
      // Send starting message.
@@ -155,6 +179,8 @@ float transmit_float=0.0;
 Uint16 SCIBT_Change_Constants=0;
 Uint16 True_password_SCIBT=0;
 
+void Process_SCI_Received_Data();
+
 __interrupt void
 sciaRxISR(void)
 {
@@ -163,7 +189,9 @@ sciaRxISR(void)
     //
 //    SCI_enableInterrupt(SCIA_BASE, SCI_INT_TXFF);
 
-    //
+
+    Process_SCI_Received_Data(&receivedValue);
+
     // Read six characters from the FIFO.
     received_char[0] = SCI_readCharBlockingFIFO(SCIA_BASE);
     received_char[1] = SCI_readCharBlockingFIFO(SCIA_BASE);
@@ -172,6 +200,7 @@ sciaRxISR(void)
     received_char[4] = SCI_readCharBlockingFIFO(SCIA_BASE);
     received_char[5] = SCI_readCharBlockingFIFO(SCIA_BASE);
 
+/*
     if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
         ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }
@@ -209,6 +238,7 @@ sciaRxISR(void)
 
         SCIBootCap = ENABLE;
     }
+*/
 
 
 /*
@@ -233,15 +263,29 @@ sciaRxISR(void)
 
 }
 
+// copy the 4 bytes stored in fvalue into byteArr
+void floatToByteArray(Float * fvalue, unsigned char * byteArr, unsigned char index_var){
+
+
+    byteArr[5] = index_var;
+    unsigned long copy = fvalue->bytes, mask = 0xFF;
+    int i = 1;
+    for(; i<5; i++){
+        byteArr[i] = (copy >> 8*(4-i) & mask);
+    }
+
+    byteArr[0] = 0x08;
+}
+
 //char transmit_char1[6];
 Uint16 ID_Vars=0;
 volatile float32_t *Ptr_Vars;
 #define NosOfVars 30
 float32_t temp_vars;
 Uint16 Enable_Vars_trasmit_SCIBT=0;
-void trasmit_vars(void) //It should be in 10msec or slower loop //Transferring 6*8 bits+2bytes gap= 64bits in one run: minimum time=64/9600=6.6msec
+void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop //Transferring 6*8 bits+2bytes gap= 64bits in one run: minimum time=64/9600=6.6msec
 {
-    if (!Enable_Vars_trasmit_SCIBT) { //Enable variable transmit over SCI along with thier IDs and ack
+    if (!Enable_Vars_trasmit_SCIBT) { //Enable variable transmit over SCI along with their IDs and ack
         return;
     }
 
@@ -250,18 +294,163 @@ void trasmit_vars(void) //It should be in 10msec or slower loop //Transferring 6
         ID_Vars = 0;
     }
     ID_Vars++;
+    index_var = ID_Vars;
     pickup_vars();
     temp_vars = *Ptr_Vars;
-    // Send bytes; From a float variable to a chars array and append with IDs, commands, etc:
+    transmitValue->f = *Ptr_Vars;
 
+    //converts Float variable 'receivedValue' to byte array
+    floatToByteArray(&transmitValue, byteArr, index_var);
+
+/*
+    // Send bytes; From a float variable to a chars array and append with IDs, commands, etc:
     SCI_writeCharBlockingFIFO(SCIA_BASE, (char) ID_Vars);
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,0));
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,1));
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,2));
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,3));
     SCI_writeCharBlockingFIFO(SCIA_BASE, (char) 0x12);      //It may use for acknowledge signal
+*/
 
 }
+
+// read floats through SCI
+// reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
+void Process_SCI_Received_Data(Float * receivedValue){
+    int i = 0;
+
+    uint16_t rxStatus = 0U;
+
+
+    if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
+        ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
+    }
+    else if (received_char[0]==0x02) {  //command 0x02 for upscreen; received_char[0] holds command
+        ir.Last_Switch=UP_Key;   //To synchronize with IR based UPKEY button operation
+    }
+    else if (received_char[0]==0x03) {  //command 0x03 for downscreen; received_char[0] holds command
+        ir.Last_Switch=DOWN_Key;  //To synchronize with IR based Downkey button operation
+    }
+    else if (received_char[0]==0x05) {  //command 0x05 for password match for SCIBT to change variables; received_char[0] holds command
+        if ( received_char[1]==0x62 && received_char[2]==0x84  )    //match these passwords received from app to enable constants to change.
+            True_password_SCIBT = 1;
+        else
+            True_password_SCIBT = 0;
+    }
+    else if (received_char[0]==0x04) {  //command 0x04 for changing constants and loading to flash; received_char[0] holds command
+
+        if (!True_password_SCIBT) return; //Provide protection lock
+
+        lcd.ID_Const = received_char[5]; //received_char[5] folds ID number
+        pickup_constant();      //This can also be used for sofware-POT operation. Good thing is that POT last value will store in flash after Off command
+        byte[0] = received_char[1];
+        byte[1] = received_char[2];
+        byte[2] = received_char[3];
+        byte[3] = received_char[4];
+
+        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
+
+        *Ptr_Constant = receivedValue->f;
+        SCIBT_Change_Constants = 1;
+
+        index_parameter = received_char[5];
+
+
+// for testing only
+        if (index_parameter==0x11) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*10.0;
+            //calculation1(&receivedValue);
+            index_var = 0x01;
+        }
+
+        if (index_parameter==0x12) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*1000.0;
+            //calculation2(&receivedValue);
+            index_var = 0x02;
+        }
+
+        if (index_parameter==0x13) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*10.0;
+            //calculation1(&receivedValue);
+            index_var = 0x03;
+        }
+
+        if (index_parameter==0x14) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*(-2.0);
+            //calculation1(&receivedValue);
+            index_var = 0x04;
+        }
+
+        if (index_parameter==0x15) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*1.0;
+            //calculation1(&receivedValue);
+            index_var = 0x05;
+        }
+
+        if (index_parameter==0x16) {
+            //use new value of parameter=receivedValue->f with index as above
+            //transmitValue=;
+
+            //pass by reference- s changes the value in place
+            // do some calculations
+            receivedValue->f = receivedValue->f*(-30.1);
+            //calculation1(&receivedValue);
+            index_var = 0x06;
+        }
+
+
+
+/*
+        // From a chars array (fArray) to a float variable (f2):
+        __byte((int *)&received_float,0) = received_char[4];
+        __byte((int *)&received_float,1) = received_char[3];
+        __byte((int *)&received_float,2) = received_char[2];
+        __byte((int *)&received_float,3) = received_char[1];
+
+        *Ptr_Constant = received_float;
+*/
+
+
+    }
+    else if (received_char[0]==0x07) {  //command 0x07 for SCI boot loading capacitor charge; received_char[0] holds command
+//        if (!True_password_SCIBT) return; //Provide protection lock
+
+        SCIBootCap = ENABLE;
+    }
+
+
+    if (detect_parameter_transfer==0x04) {
+
+
+    }
+}
+
+
 
 //For assigning picking up constant to change THERE IS BETTER WAY (SHORT CODE) IF USED STRUCTURE
 volatile float32_t dummy2;
