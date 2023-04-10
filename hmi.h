@@ -177,9 +177,7 @@ void Fail(void);
 void initECAP(void);
 __interrupt void ecap1ISR(void);
 
-
-
-
+void reset_ecap_counter_IR_remote(void);
 
 
 void configCLAMemory(void);
@@ -195,7 +193,7 @@ void Example_Done(void);
 void Write_to_Flash(void);//void Example_CallFlashAPI(void);
 void FMSTAT_Fail(void);
 void fill_buffer_forflashwrite(void);
-
+void IfChangeConstants_flashWrite(void);
 
 void CodeSecurity(void);
 

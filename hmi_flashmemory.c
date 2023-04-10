@@ -49,6 +49,15 @@ void first_time_flash_writting_after_erase(void)
     }
 }
 
+void IfChangeConstants_flashWrite(void)
+{
+    if (lcd.HMI_Change_Constants){
+        if (command.OnOffCh1==OFF && command.OnOffCh2==OFF && lcd.UpDownKeyFunc!=KeyForChangeofConst && lcd.UpDownKeyFunc!=KeyForChangeIDofConst){
+            fill_buffer_forflashwrite();
+        }
+    }
+}
+
 void fill_buffer_forflashwrite(void)
 {
     int i;

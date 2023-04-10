@@ -125,10 +125,7 @@ void main(void)
     #if VIENNA_SDFM_SENSING == 1
         VIENNA_HAL_enablePWMInterruptGeneration( VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE, (float32_t)VIENNA_PWM_CLK_IN_SDFM_OSR * (float32_t)1.5 );
     #else
-        VIENNA_HAL_enablePWMInterruptGeneration(
-                     VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE,
-                     EPWM_getCounterCompareValue(VIENNA_HIGH_FREQ_PWM1_BASE,
-                     EPWM_COUNTER_COMPARE_B) );
+        VIENNA_HAL_enablePWMInterruptGeneration( VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE, EPWM_getCounterCompareValue(VIENNA_HIGH_FREQ_PWM1_BASE, EPWM_COUNTER_COMPARE_B) );
     #endif
 
     //
@@ -307,13 +304,9 @@ void A2(void)    //2*50us=100us (10kHz)
 
 void B1(void)    //3*500usec
 {
-
-//    (*LCD_Ptr)();  //in 1 millisencond subroutine
     LoopforLCDPtr();  //in 1 millisencond subroutine
+    if (lcd.LCD_ACTION==LCD_NO_ACTION) StateControl_RemoteScreen();
 
-    if (lcd.LCD_ACTION==LCD_NO_ACTION) {
-        StateControl_RemoteScreen();
-    }
 //    VIENNA_updateBoardStatus();
 
     //
@@ -339,31 +332,23 @@ Uint16 j=0;
 void B3(void)   //3*500usec
 {
     //    setTimeCheck();
-    if (common_flag_init_GlobalVariable) {
-        initGlobalVariable();
-    }
+    if (common_flag_init_GlobalVariable) initGlobalVariable();
 
     i++;
     if (i>667) {    //for 1sec
         i=0;
 
-        if ( ECap1Regs.TSCTR > 0x007FFFFF) {    //reset ecap counter for IR remote
-            ECap1Regs.TSCTR =0;
-            ECAP_reArm(ECAP1_BASE); //ECAP_ECCTL2_REARM;
-        }
+        reset_ecap_counter_IR_remote(); //reset eCap counter to address IR errors
+
+        IfChangeConstants_flashWrite();  //If any HMI or SCI changes constants then save modified constants to flash
 
         if(LEDRed) LEDRed=OFF;  //Turn off the the LED triggered by IR sensor
-
-        if (lcd.HMI_Change_Constants){
-            if (command.OnOffCh1==OFF && command.OnOffCh2==OFF && lcd.UpDownKeyFunc!=KeyForChangeofConst && lcd.UpDownKeyFunc!=KeyForChangeIDofConst){
-                fill_buffer_forflashwrite();
-            }
-        }
     }
 
     j++;
     if (j>7) {    //approximate 10msec
         j=0;
+
         trasmit_vars();
     }
 
@@ -378,18 +363,12 @@ void B3(void)   //3*500usec
 
 void configCLAMemory(void)
 {
-
     //
     // Copy over CLA Math tables from FLASH to RAM
-    //
-    memcpy((uint32_t *)&CLA1mathTablesRunStart, (uint32_t *)&CLA1mathTablesLoadStart,
-            (uint32_t)&CLA1mathTablesLoadSize);
-
+    memcpy((uint32_t *)&CLA1mathTablesRunStart, (uint32_t *)&CLA1mathTablesLoadStart, (uint32_t)&CLA1mathTablesLoadSize);
     MemCfg_setLSRAMMasterSel(MEMCFG_SECT_LS6, MEMCFG_LSRAMMASTER_CPU_CLA1);
     MemCfg_setCLAMemType(MEMCFG_SECT_LS6, MEMCFG_CLA_MEM_DATA);
-
 }
-
 
 
 //******************************************************************************

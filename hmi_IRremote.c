@@ -141,7 +141,7 @@ void ISR_remote(void)   //IR code decode logic giving received code/switch value
             ir.flag_start_remote = 0;
             ECAP_clearInterrupt(ECAP1_BASE,ECAP_ISR_SOURCE_CAPTURE_EVENT_4);
             EALLOW;
-            ECap1Regs.ECCTL2.bit.STOP_WRAP = 1;     //prepare for 1 cycle check
+            ECap1Regs.ECCTL2.bit.STOP_WRAP = 1;     //prepare for 2 cycle check
             ECAP_disableInterrupt(ECAP1_BASE, ECAP_ISR_SOURCE_CAPTURE_EVENT_4);
             //>>> USE THIS LINE IF USING INTERRUPT DRIVEN REMOTE CONTROL OPERATION            ECAP_enableInterrupt(ECAP1_BASE, ECAP_ISR_SOURCE_CAPTURE_EVENT_2); //interrupt on 1 cycle
             EDIS;
@@ -162,7 +162,7 @@ void ISR_remote(void)   //IR code decode logic giving received code/switch value
             //>>> USE THIS LINE IF USING INTERRUPT DRIVEN REMOTE CONTROL OPERATION            ECAP_enableInterrupt(ECAP1_BASE, ECAP_ISR_SOURCE_CAPTURE_EVENT_4); //interrupt on 4 cycle
             EDIS;
         }
-        if(ECap1Regs.CAP2 < 1230000 && ECap1Regs.CAP2 > 1000000 )  {  // for 11.25 ms 1125000
+        else if(ECap1Regs.CAP2 < 1230000 && ECap1Regs.CAP2 > 1000000 )  {  // for 11.25 ms 1125000
             ir.Last_Switch = ir.Prev_Switch;
             ir.Longpress=ENABLE;
         }
@@ -205,6 +205,13 @@ void ISR_remote(void)   //IR code decode logic giving received code/switch value
 
 }
 
+void reset_ecap_counter_IR_remote(void)
+{
+    if ( ECap1Regs.TSCTR > 0x007FFFFF) {    //reset ecap counter for IR remote
+        ECap1Regs.TSCTR =0;
+        ECAP_reArm(ECAP1_BASE); //ECAP_ECCTL2_REARM;
+    }
+}
 
 void remote_key_display_state_machine(void) //STATE MACHINE for IR switch and LCD display
 {
