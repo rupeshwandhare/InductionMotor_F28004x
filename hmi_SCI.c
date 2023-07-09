@@ -321,9 +321,9 @@ void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop 
 // read floats through SCI
 // reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
 void Process_SCI_Received_Data(Float * receivedValue){
-    int i = 0;
+//    int i = 0;
 
-    uint16_t rxStatus = 0U;
+//    uint16_t rxStatus = 0U;
 
 
     if (received_char[0]==50) {  //command 0x01 for On and Off; received_char[0] holds command
