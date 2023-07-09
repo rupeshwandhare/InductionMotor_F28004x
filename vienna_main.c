@@ -99,19 +99,7 @@ void main(void)
         VIENNA_HAL_setupSDFM(VIENNA_PFC3PH_PWM_PERIOD, VIENNA_PWM_CLK_IN_SDFM_OSR, VIENNA_SD_CLK_COUNT, VIENNA_SDFM_OSR);
     #endif
 
-    //
-    //Profiling GPIO
-    //
-//    VIENNA_HAL_setupProfilingGPIO();
 
-    //
-    //configure LED GPIO
-    //
-//    VIENNA_HAL_setupLEDGPIO();
-
-    //
-    //initialize global variables
-    //
 //    VIENNA_globalVariablesInit();
     initGlobalVariable();
     //
@@ -146,14 +134,7 @@ void main(void)
                                     VIENNA_HIGH_FREQ_PWM3_BASE,
                                     VIENNA_I_TRIP_LIMIT_AMPS, VIENNA_I_MAX_SENSE_AMPS);
 
-
-    InitECapture();  //Initialize capture unit; and gpio pin via Xbar input select for IR based remote control
-
-    CodeSecurity();  //For UID based code protection
-
-    InitializeLCD(); //Initialize LCD
-
-    InitializeSCI(); //For bluetooth or wifi
+    InitializeSCI(); //For bluetooth or wifi or Touchpad
 
     VIENNA_HAL_setPinsAsPWM();  //Set GPIO as PWM pins, safe to setup PWM pins, as ADC and comparator based trips are active now, PWM were tripped low in the previous routine
 
@@ -166,9 +147,6 @@ void main(void)
     // Setup SFRA
 //    VIENNA_setupSFRA();
 
-    first_time_flash_writting_after_erase();   //First time flash writing after flash erase
-
-    load_flash_constants(); //Load constants from flash memory
 
     CONTROL_STATE = VDC_CHARGING;  //Initialize DC bus charging state
 
@@ -278,8 +256,7 @@ void B0(void)
 
 void A1(void)   //2*50us=100us (10kHz)
 {
-    remote_operation();
-//    GpioDataRegs.GPATOGGLE.bit.GPIO26 = 1;
+    //    GpioDataRegs.GPATOGGLE.bit.GPIO26 = 1;
     //    VIENNA_runSFRABackGroundTasks();
     //
     //the next time CpuTimer0 'counter' reaches Period value go to A1
@@ -304,8 +281,6 @@ void A2(void)    //2*50us=100us (10kHz)
 
 void B1(void)    //3*500usec
 {
-    LoopforLCDPtr();  //in 1 millisencond subroutine
-    if (lcd.LCD_ACTION==LCD_NO_ACTION) StateControl_RemoteScreen();
 
 //    VIENNA_updateBoardStatus();
 
@@ -317,7 +292,6 @@ void B1(void)    //3*500usec
 
 void B2(void)   //3*500usec
 {
-    remote_key_display_state_machine();
 
     //    VIENNA_HAL_toggleLED();
 
@@ -338,9 +312,6 @@ void B3(void)   //3*500usec
     if (i>667) {    //for 1sec
         i=0;
 
-        reset_ecap_counter_IR_remote(); //reset eCap counter to address IR errors
-
-        IfChangeConstants_flashWrite();  //If any HMI or SCI changes constants then save modified constants to flash
 
         if(LEDRed) LEDRed=OFF;  //Turn off the the LED triggered by IR sensor
     }

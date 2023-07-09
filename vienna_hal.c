@@ -116,13 +116,13 @@ void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3, uint16_t pwm_perio
 
     EPWM_enablePhaseShiftLoad(base2);
     EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base2, 1000);        //This is checked if we keep phase shift 1000 then it creates exactly 180deg phase shift along with proper deadband as deadband is symmetrical due to equal FED RED
+    EPWM_setPhaseShift(base2, 667);
     EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 
 
     EPWM_enablePhaseShiftLoad(base3);
     EPWM_setSyncOutPulseMode(base3, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base3, 2);
+    EPWM_setPhaseShift(base3, 1333);
     EPWM_setCountModeAfterSync(base3, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 }
 

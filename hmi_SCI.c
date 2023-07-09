@@ -178,6 +178,9 @@ float received_float=0.0;
 float transmit_float=0.0;
 Uint16 SCIBT_Change_Constants=0;
 Uint16 True_password_SCIBT=0;
+float *Ptr_recieve_var;
+float speed_ref=0;
+
 
 void Process_SCI_Received_Data();
 
@@ -190,7 +193,6 @@ sciaRxISR(void)
 //    SCI_enableInterrupt(SCIA_BASE, SCI_INT_TXFF);
 
 
-    Process_SCI_Received_Data(&receivedValue);
 
     // Read six characters from the FIFO.
     received_char[0] = SCI_readCharBlockingFIFO(SCIA_BASE);
@@ -199,6 +201,8 @@ sciaRxISR(void)
     received_char[3] = SCI_readCharBlockingFIFO(SCIA_BASE);
     received_char[4] = SCI_readCharBlockingFIFO(SCIA_BASE);
     received_char[5] = SCI_readCharBlockingFIFO(SCIA_BASE);
+
+    Process_SCI_Received_Data(&receivedValue);
 
 /*
     if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
@@ -322,13 +326,13 @@ void Process_SCI_Received_Data(Float * receivedValue){
     uint16_t rxStatus = 0U;
 
 
-    if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
+    if (received_char[0]==50) {  //command 0x01 for On and Off; received_char[0] holds command
         ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }
-    else if (received_char[0]==0x02) {  //command 0x02 for upscreen; received_char[0] holds command
+    else if (received_char[0]==51) {  //command 0x02 for upscreen; received_char[0] holds command
         ir.Last_Switch=UP_Key;   //To synchronize with IR based UPKEY button operation
     }
-    else if (received_char[0]==0x03) {  //command 0x03 for downscreen; received_char[0] holds command
+    else if (received_char[0]==52) {  //command 0x03 for downscreen; received_char[0] holds command
         ir.Last_Switch=DOWN_Key;  //To synchronize with IR based Downkey button operation
     }
     else if (received_char[0]==0x05) {  //command 0x05 for password match for SCIBT to change variables; received_char[0] holds command
@@ -337,20 +341,24 @@ void Process_SCI_Received_Data(Float * receivedValue){
         else
             True_password_SCIBT = 0;
     }
-    else if (received_char[0]==0x04) {  //command 0x04 for changing constants and loading to flash; received_char[0] holds command
+    else if (received_char[0]==0x00) {  //command 0x04 for changing constants and loading to flash; received_char[0] holds command
 
-        if (!True_password_SCIBT) return; //Provide protection lock
+//        if (!True_password_SCIBT) return; //Provide protection lock
 
         lcd.ID_Const = received_char[5]; //received_char[5] folds ID number
-        pickup_constant();      //This can also be used for sofware-POT operation. Good thing is that POT last value will store in flash after Off command
+        //pickup_constant();      //This can also be used for sofware-POT operation. Good thing is that POT last value will store in flash after Off command
         byte[0] = received_char[1];
         byte[1] = received_char[2];
         byte[2] = received_char[3];
         byte[3] = received_char[4];
 
-        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
+//        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
+//        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 
-        *Ptr_Constant = receivedValue->f;
+//        *Ptr_recieve_var = receivedValue->f;
+
+        speed_ref = (float)received_char[1];
+
         SCIBT_Change_Constants = 1;
 
         index_parameter = received_char[5];
