@@ -38,7 +38,7 @@
 #define D7Not   GpioDataRegs.GPBCLEAR.bit.GPIO39
 #define E       GpioDataRegs.GPBSET.bit.GPIO33
 #define ENot    GpioDataRegs.GPBCLEAR.bit.GPIO33
-#define RS      GpioDataRegs.GPBSET.bit.GPIO32
+#define RSS      GpioDataRegs.GPBSET.bit.GPIO32
 #define RSNot   GpioDataRegs.GPBCLEAR.bit.GPIO32
 
 #define UP_Key          0x00FF6996//0x01FE58A7             // Increment Key-code

@@ -44,7 +44,7 @@ extern "C" {
 
 #define C28x_CORE 1
 #define CLA_CORE 2
-#define VIENNA_CONTROL_RUNNING_ON 2
+#define VIENNA_CONTROL_RUNNING_ON 1
 
 //
 // Check system under DC condition (cleanest SFRA curves) 0 is FALSE, 1 is TRUE
