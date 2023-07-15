@@ -237,7 +237,8 @@ void C1(void) 	// Toggle GPIO-34
 */
 
 
-
+float vars1=0.0;
+float vars2=0.0;
 
 //MainISR 
 void MotorISR(void)
@@ -277,8 +278,8 @@ void MotorISR(void)
 	//ipark1.Sine  =_IQ30toIQ(IQsinTable[_IQtoIQ9(rg1.Out)]);
     //ipark1.Cosine=_IQ30toIQ(IQcosTable[_IQtoIQ9(rg1.Out)]);
 
-	ipark1.Sine=sin(rg1.Out);
-    ipark1.Cosine=cos(rg1.Out);
+	ipark1.Sine=sinf(rg1.Out);
+    ipark1.Cosine=cosf(rg1.Out);
 	IPARK_MACRO(ipark1)
 
 // ------------------------------------------------------------------------------
@@ -292,17 +293,18 @@ void MotorISR(void)
 //  Connect inputs of the PWM_DRV module and call the PWM signal generation macro
 // ------------------------------------------------------------------------------
 
-//    duty1 =  (uint16_t) ( (float32_t) ((float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)) * (float32_t) fabsf((1.0-common_vars_duty1)) );   //LATER FEED CONSTANT VALUE FOR: VIENNA_PFC3PH_PWM_PERIOD / 2.0
-
-
 // 	EPwm1Regs.CMPA.bit.CMPAHR = _IQmpy(m.HalfPerMax,m.MfuncC1)+ m.HalfPerMax;    \
 //    (*ePWM[ch2]).CMPA.half.CMPA = _IQmpy(m.HalfPerMax,m.MfuncC2)+ m.HalfPerMax;    \
 //    (*ePWM[ch3]).CMPA.half.CMPA = _IQmpy(m.HalfPerMax,m.MfuncC3)+ m.HalfPerMax;    \
 
-    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(1.0+svgen1.Ta)));
-    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(1.0+svgen1.Tb)));
-    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM3_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(1.0+svgen1.Tc)));
-/*
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Ta)));
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Tb)));
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM3_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Tc)));
+
+    vars1 = svgen1.Ta - svgen1.Tc;
+    vars2 = svgen1.Tb;
+
+    /*
     pwm1.MfuncC1 = svgen1.Ta;  
     pwm1.MfuncC2 = svgen1.Tb;   
     pwm1.MfuncC3 = svgen1.Tc; 
@@ -353,8 +355,8 @@ void MotorISR(void)
 	park1.Alpha = clarke1.Alpha;
 	park1.Beta = clarke1.Beta;
 	park1.Angle = rg1.Out;
-	park1.Sine = _IQsinPU(park1.Angle);
-	park1.Cosine = _IQcosPU(park1.Angle);
+	park1.Sine = sinf(park1.Angle);
+	park1.Cosine = cosf(park1.Angle);
 	PARK_MACRO(park1) 
  
 // ------------------------------------------------------------------------------
@@ -392,14 +394,25 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PWM_DRV module and call the PWM signal generation macro
 // ------------------------------------------------------------------------------
+
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Ta)));
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Tb)));
+    VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM3_BASE, EPWM_COUNTER_COMPARE_A, (uint16_t)( (float32_t)((float32_t)VIENNA_PFC3PH_PWM_PERIOD / 2.0)*(float32_t) fabsf(1.0-svgen1.Tc)));
+
+    vars1 = svgen1.Ta - svgen1.Tc;
+    vars2 = svgen1.Tb;
+
+ 	/*
     pwm1.MfuncC1 = svgen1.Ta;  
     pwm1.MfuncC2 = svgen1.Tb;   
     pwm1.MfuncC3 = svgen1.Tc; 
 	PWM_MACRO(1,2,3,pwm1)							// Calculate the new PWM compare values	
+*/
 
 // ------------------------------------------------------------------------------
 //    Connect inputs of the PWMDAC module 
 // ------------------------------------------------------------------------------	
+/*
 	pwmdac1.MfuncC1 = svgen1.Ta; 
     pwmdac1.MfuncC2 = svgen1.Tb; 
     PWMDAC_MACRO(6,pwmdac1)	  						// PWMDAC 6A, 6B
@@ -407,14 +420,8 @@ void MotorISR(void)
     pwmdac1.MfuncC1 = svgen1.Tc; 
     pwmdac1.MfuncC2 = svgen1.Tb-svgen1.Tc; 
 	PWMDAC_MACRO(7,pwmdac1)		  					// PWMDAC 7A, 7B  
+*/
 
-// ------------------------------------------------------------------------------
-//  Connect inputs of the DATALOG module 
-// ------------------------------------------------------------------------------
-    DlogCh1 = _IQtoQ15(clarke1.As);
-    DlogCh2 = _IQtoQ15(clarke1.Bs);
-    DlogCh3 = _IQtoQ15(svgen1.Ta);
-    DlogCh4 = _IQtoQ15(volt1.VphaseA); 
 
 
 #endif // (BUILDLEVEL==LEVEL2)

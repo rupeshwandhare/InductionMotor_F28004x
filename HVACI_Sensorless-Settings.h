@@ -14,7 +14,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL1
+#define   BUILDLEVEL LEVEL2
 
 #ifndef TRUE
 #define FALSE 0
@@ -676,13 +676,13 @@ typedef struct { float32_t  Freq;         // Input: Ramp frequency (pu)
 #define RG_MACRO(v)                                 \
                                                     \
 /* Compute the angle rate */                        \
-    v.Angle = v.Angle + (v.StepAngleMax*v.Freq);       \
+    v.Angle = v.Angle + (2*PI*v.StepAngleMax*v.Freq);       \
                                                     \
 /* Saturate the angle rate within (-1,1) */         \
-    if (v.Angle>(1.0))                           \
-        v.Angle -= (1.0);                        \
-    else if (v.Angle<(-1.0))                     \
-        v.Angle += (1.0);                        \
+    if (v.Angle>(2*PI))                           \
+        v.Angle -= (2*PI);                        \
+    else if (v.Angle<(-2*PI))                     \
+        v.Angle += (2*PI);                        \
         v.Out=v.Angle;
 
 // Use the code snippet below if gain/offset needed.                                                    \

@@ -64,7 +64,7 @@ uint16_t CLA1mathTablesLoadSize;
 
 //=====
 
-
+void sw_debug(void);
 
 void main(void)
 {
@@ -268,6 +268,8 @@ void A1(void)   //2*50us=100us (10kHz)
 
 void A2(void)    //2*50us=100us (10kHz)
 {
+
+    sw_debug();
 //    protections4();
     //
     //the next time CpuTimer0 'counter' reaches Period value go to A1
