@@ -150,6 +150,7 @@ void main(void)
 
     CONTROL_STATE = VDC_CHARGING;  //Initialize DC bus charging state
 
+    init_motor();
 
     // Tasks State-machine initialization
     Alpha_State_Ptr = &A0;
@@ -181,7 +182,8 @@ void main(void)
 #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
     interrupt void ISR1(void)
     {
-        ControlCode_PVEmu();
+        MotorISR();
+//        ControlCode_PVEmu();
         //VIENNA_pfcControlCode();
         VIENNA_HAL_clearInterrupt(VIENNA_C28x_ISR1_INTERRUPT_PIE_GROUP_NO);
     }// control ISR Ends Here

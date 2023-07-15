@@ -1306,14 +1306,17 @@ static inline void ControlCode_PVEmu(void)
 {
     uint16_t duty1, duty2;
 
+/*
 
     readCurrVolADCSignals();    //It takes 2.5usec
 //    VIENNA_readCurrVolADCSignals();
     filter_signals();
     filter_signals2();
+*/
 
 //        (*PowerControl_State_Ptr1)();   // jump to an Alpha state (void Monitor_Vdc,Idle_State,Slew_Control,Vpv_Control)
 
+/*
     if (CONTROL_STATE==FAULT_STATE || CONTROL_STATE2==FAULT_STATE){
         Fault_State();
     }
@@ -1326,11 +1329,13 @@ static inline void ControlCode_PVEmu(void)
             case VPV_CONTROL1:
                 Vpv_Control1();
                 break;
+*/
 /*
             case VDC_CHARGING:
                 Vdc_Charging();
                 break;
 */
+/*
             case SLEW_CONTROL1:
                 Slew_Control1();
                 break;
@@ -1340,11 +1345,13 @@ static inline void ControlCode_PVEmu(void)
             case DEACCELERATION1:
                 Deacceleration1();
                 break;
+*/
 /*
             case FAULT_STATE:
                 Fault_State();
                  break;
 */
+/*
             default:
                 break;
         }
@@ -1353,11 +1360,13 @@ static inline void ControlCode_PVEmu(void)
             case VPV_CONTROL2:
                 Vpv_Control2();
                 break;
+*/
 /*
             case VDC_CHARGING:
                 Vdc_Charging();
                 break;
 */
+/*
             case SLEW_CONTROL2:
                 Slew_Control2();
                 break;
@@ -1367,15 +1376,18 @@ static inline void ControlCode_PVEmu(void)
             case DEACCELERATION2:
                 Deacceleration2();
                 break;
+*/
 /*
             case FAULT_STATE:
                 Fault_State();
                  break;
 */
+/*
             default:
                 break;
         }
     }
+*/
 
 //ONLY FOR TESTING
 //    vpv_ref1_generation();
@@ -1392,6 +1404,7 @@ static inline void ControlCode_PVEmu(void)
 */
 
 
+/*
     if (CONTROL_STATE==VPV_CONTROL1  || CONTROL_STATE==SLEW_CONTROL1 || CONTROL_STATE==DEACCELERATION1) {
         // PWM Driver for channel1
         if (common_vars_duty1>0.6) common_vars_duty1 = 0.6;
@@ -1401,12 +1414,14 @@ static inline void ControlCode_PVEmu(void)
 
         duty1 =  (uint16_t) ( (float32_t) ((float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)) * (float32_t) fabsf((1.0-common_vars_duty1)) );   //LATER FEED CONSTANT VALUE FOR: VIENNA_PFC3PH_PWM_PERIOD / 2.0
 
-        VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, duty1);
+//        VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM1_BASE, EPWM_COUNTER_COMPARE_A, duty1);
 
 //        EPwm1Regs.CMPA.bit.CMPA = EPwm1Regs.TBPRD - common_vars.duty1*(EPwm1Regs.TBPRD);
     }
+*/
 
 
+/*
     if (CONTROL_STATE2==VPV_CONTROL2  || CONTROL_STATE2==SLEW_CONTROL2 || CONTROL_STATE2==DEACCELERATION2) {
         // PWM Driver for channel1
         if (common_vars_duty2>0.6) common_vars_duty2 = 0.6;
@@ -1416,10 +1431,11 @@ static inline void ControlCode_PVEmu(void)
 
         duty2 =  (uint16_t) ( (float32_t) ((float32_t)(VIENNA_PFC3PH_PWM_PERIOD / 2.0)) * (float32_t) fabsf((1.0-common_vars_duty2)) );   //LATER FEED CONSTANT VALUE FOR: VIENNA_PFC3PH_PWM_PERIOD / 2.0
 
-        VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, duty2);
+//        VIENNA_HAL_EPWM_setCounterCompareValueOptimized(EPWM2_BASE, EPWM_COUNTER_COMPARE_A, duty2);
 
 //        EPwm1Regs.CMPA.bit.CMPA = EPwm1Regs.TBPRD - common_vars.duty1*(EPwm1Regs.TBPRD);
     }
+*/
 
     VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
 

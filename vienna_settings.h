@@ -66,12 +66,12 @@ extern "C" {
 //
 //Power Stage Related Values
 //
-#define VIENNA_PFC3PH_PWM_SWITCHING_FREQUENCY_HZ ((float32_t)50*1000)
+#define VIENNA_PFC3PH_PWM_SWITCHING_FREQUENCY_HZ ((float32_t)10*1000)
 #define VIENNA_PFC3PH_PWM_PERIOD ((VIENNA_PWMSYSCLOCK_FREQ_HZ)/(VIENNA_PFC3PH_PWM_SWITCHING_FREQUENCY_HZ))
 
 #define PWMSYSCLOCK_FREQ    (float32_t)(100 * 1000000)
 
-#define INV_DEADBAND_US              ((float32_t)1.5)           //This statement is checked, it generates delay of xx usec
+#define INV_DEADBAND_US              ((float32_t)4.0)           //This statement is checked, it generates delay of xx usec
 #define INV_DEADBAND_PWM_COUNT       (int16_t)((float32_t)                \
                                           INV_DEADBAND_US *               \
                                           (float32_t)PWMSYSCLOCK_FREQ *   \
