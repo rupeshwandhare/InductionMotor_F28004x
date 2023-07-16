@@ -1259,26 +1259,33 @@ static inline void readCurrVolADCSignals(void)
 
 }
 
-#pragma FUNC_ALWAYS_INLINE(filter_vpv1)
-static inline void filter_vpv1(void)  //vpv filtering
+#pragma FUNC_ALWAYS_INLINE(filter_vdc)
+static inline void filter_vdc(void)  //vdc filtering
 {
-    sensor_v_pv1_fltr = 0.2283* sensor_v_pv1_fltr+ 0.3859* (VIENNA_vPV1Meas_pu + sensor_v_pv1_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
-    sensor_v_pv1_prev = VIENNA_vPV1Meas_pu;
+    sensor_v_dc_fltr = 0.8817652051* sensor_v_dc_fltr+ 0.0591173974* (VIENNA_vDCMeas_pu + sensor_v_dc_prev); //0.8817652051,0.0591173974 for wc=2*pi*200 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+    sensor_v_dc_prev = VIENNA_vDCMeas_pu;
 }
 
-#pragma FUNC_ALWAYS_INLINE(filter_ipv1)
-static inline void filter_ipv1(void)  //vpv filtering
+#pragma FUNC_ALWAYS_INLINE(filter_iL1)
+static inline void filter_iL1(void)  //vpv filtering
 {
-    sensor_i_pv1_fltr = 0.2283* sensor_i_pv1_fltr+ 0.3859* (VIENNA_iPV1Meas_pu + sensor_i_pv1_prev); //0.2283,0.3859 for fc=10k with Ts=1/50kHz
-    sensor_i_pv1_prev = VIENNA_iPV1Meas_pu;
+    sensor_i_L1_fltr = 0.2282609* sensor_i_L1_fltr+ 0.3858695* (VIENNA_iL1Meas_pu + sensor_i_L1_prev); //0.2282609,0.3858695 for wc=2*pi*2000 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+    sensor_i_L1_prev = VIENNA_iL1Meas_pu;
+}
+
+#pragma FUNC_ALWAYS_INLINE(filter_iL2)
+static inline void filter_iL2(void)  //vpv filtering
+{
+    sensor_i_L2_fltr = 0.2282609* sensor_i_L2_fltr+ 0.3858695* (VIENNA_iL2Meas_pu + sensor_i_L2_prev); //0.2282609,0.3858695 for wc=2*pi*2000 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+    sensor_i_L2_prev = VIENNA_iL2Meas_pu;
 }
 
 #pragma FUNC_ALWAYS_INLINE(filter_signals)
 static inline void filter_signals(void)
 {
-//    filter_vdc();
-    filter_vpv1();
-    filter_ipv1();
+    filter_vdc();
+    filter_iL1();
+    filter_iL2();
 }
 
 #pragma FUNC_ALWAYS_INLINE(filter_vpv2)

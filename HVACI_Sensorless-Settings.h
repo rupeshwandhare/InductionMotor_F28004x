@@ -14,7 +14,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL1
+#define   BUILDLEVEL LEVEL2
 
 #ifndef TRUE
 #define FALSE 0

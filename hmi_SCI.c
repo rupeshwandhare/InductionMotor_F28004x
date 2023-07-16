@@ -181,6 +181,8 @@ Uint16 True_password_SCIBT=0;
 float *Ptr_recieve_var;
 float speed_ref=0;
 
+Uint16 OnOffMotor = 0;
+
 
 void Process_SCI_Received_Data();
 
@@ -327,6 +329,9 @@ void Process_SCI_Received_Data(Float * receivedValue){
 
 
     if (received_char[0]==50) {  //command 0x01 for On and Off; received_char[0] holds command
+        if (OnOffMotor) OnOffMotor=0;
+        else OnOffMotor=1;
+
         ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }
     else if (received_char[0]==51) {  //command 0x02 for upscreen; received_char[0] holds command
@@ -358,6 +363,8 @@ void Process_SCI_Received_Data(Float * receivedValue){
 //        *Ptr_recieve_var = receivedValue->f;
 
         speed_ref = (float)received_char[1];
+        if (speed_ref < -1.0) speed_ref = -1.0;
+        if (speed_ref > 1.0) speed_ref = 1.0;
 
         SCIBT_Change_Constants = 1;
 

@@ -67,6 +67,7 @@ uint16_t CLA1mathTablesLoadSize;
 void sw_debug(void);
 void init_motor(void);
 void MotorISR(void);
+void MotorOperation(void);
 
 void main(void)
 {
@@ -287,6 +288,8 @@ void A2(void)    //2*50us=100us (10kHz)
 
 void B1(void)    //3*500usec
 {
+
+    MotorOperation();
 
 //    VIENNA_updateBoardStatus();
 

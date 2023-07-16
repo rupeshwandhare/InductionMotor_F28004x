@@ -89,7 +89,8 @@ SPEED_MEAS_QEP speed1 = SPEED_MEAS_QEP_DEFAULTS;
 // Instance a speed calculator based on capture Qep (for eQep of 280x only)
 SPEED_MEAS_CAP speed2 = SPEED_MEAS_CAP_DEFAULTS;
 
-
+extern Uint16 OnOffMotor;
+extern float speed_ref;
 
 void HVDMC_Protection(void);
 
@@ -191,7 +192,10 @@ void init_motor(void)
         clearPWM1Trip();
 }
 
+void MotorOperation(void)
+{
 
+}
 
 
 
@@ -245,6 +249,13 @@ void MotorISR(void)
 
 // Verifying the ISR
     IsrTicker++;
+
+    readCurrVolADCSignals();
+    filter_signals();
+
+    if (!OnOffMotor) { //NOT GOOD
+        return;
+    }
 
 // =============================== LEVEL 1 ======================================
 //	  Checks target independent modules, duty cycle waveforms and PWM update
@@ -336,6 +347,7 @@ void MotorISR(void)
 //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1). 
 //	Connect inputs of the CLARKE module and call the clarke transformation macro
 // ------------------------------------------------------------------------------
+/*
 	#ifdef DSP2833x_DEVICE_H
 	clarke1.As=((AdcMirror.ADCRESULT1)*0.00024414-offsetA)*2*0.909; // Phase A curr.
 	clarke1.Bs=((AdcMirror.ADCRESULT2)*0.00024414-offsetB)*2*0.909; // Phase B curr.
@@ -345,6 +357,10 @@ void MotorISR(void)
 	clarke1.As = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT1)-offsetA); // Phase A curr.
 	clarke1.Bs = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT2)-offsetB); // Phase B curr.	
 	#endif														   // (ADCmeas(q12->q24)-offset)*2	
+*/
+//    clarke1.As=((AdcMirror.ADCRESULT1)*0.00024414-offsetA)*2*0.909; // Phase A curr.
+//    clarke1.Bs=((AdcMirror.ADCRESULT2)*0.00024414-offsetB)*2*0.909; // Phase B curr.
+
 	
 	CLARKE_MACRO(clarke1)  
 
