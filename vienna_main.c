@@ -65,6 +65,8 @@ uint16_t CLA1mathTablesLoadSize;
 //=====
 
 void sw_debug(void);
+void init_motor(void);
+void MotorISR(void);
 
 void main(void)
 {

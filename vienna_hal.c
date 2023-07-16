@@ -305,6 +305,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_1,
                  VIENNA_IL2_ADC_TRIG_SOURCE,
                  VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+/*
     //
     // iPV1Meas1
     //
@@ -317,6 +318,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IPV2_ADC_MODULE, VIENNA_IPV2_ADC_SOC_NO_1,
                  VIENNA_IPV2_ADC_TRIG_SOURCE,
                  VIENNA_IPV2_ADC_PIN,  VIENNA_IPV2_ACQPS_SYS_CLKS);
+*/
     // iL1Meas2
     ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_2,
                  VIENNA_IL1_ADC_TRIG_SOURCE,
@@ -327,6 +329,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_2,
                  VIENNA_IL2_ADC_TRIG_SOURCE,
                  VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+/*
     //
     // iPV1Meas2
     //
@@ -339,6 +342,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IPV2_ADC_MODULE, VIENNA_IPV2_ADC_SOC_NO_2,
                  VIENNA_IPV2_ADC_TRIG_SOURCE,
                  VIENNA_IPV2_ADC_PIN,  VIENNA_IPV2_ACQPS_SYS_CLKS);
+*/
     // iL1Meas3
     ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_3,
                  VIENNA_IL1_ADC_TRIG_SOURCE,
@@ -349,6 +353,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_3,
                  VIENNA_IL2_ADC_TRIG_SOURCE,
                  VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+/*
     //
     // iPV1Meas3
     //
@@ -361,6 +366,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IPV2_ADC_MODULE, VIENNA_IPV2_ADC_SOC_NO_3,
                  VIENNA_IPV2_ADC_TRIG_SOURCE,
                  VIENNA_IPV2_ADC_PIN,  VIENNA_IPV2_ACQPS_SYS_CLKS);
+*/
     // iL1Meas4
     ADC_setupSOC(VIENNA_IL1_ADC_MODULE, VIENNA_IL1_ADC_SOC_NO_4,
                  VIENNA_IL1_ADC_TRIG_SOURCE,
@@ -371,6 +377,7 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_IL2_ADC_MODULE, VIENNA_IL2_ADC_SOC_NO_4,
                  VIENNA_IL2_ADC_TRIG_SOURCE,
                  VIENNA_IL2_ADC_PIN,  VIENNA_IL2_ACQPS_SYS_CLKS);
+/*
     //
     // iPV1Meas4
     //
@@ -436,6 +443,7 @@ void setupADC(void)
                  VIENNA_VPV2_ADC_TRIG_SOURCE,
                  VIENNA_VPV2_ADC_PIN, VIENNA_VPV2_ACQPS_SYS_CLKS);
     //========
+*/
 
     //
     // vDCMeas1

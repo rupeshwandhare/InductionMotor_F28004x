@@ -1219,6 +1219,7 @@ static inline void readCurrVolADCSignals(void)
             VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4)) *
             (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL2MeasOffset_pu ) * 2.0f;
 
+/*
     VIENNA_iPV1Meas_pu = ( ((float32_t)(VIENNA_IPV1_FB_1 + VIENNA_IPV1_FB_2 +
             VIENNA_IPV1_FB_3 + VIENNA_IPV1_FB_4)) *
             (float32_t)ADC_I_GAIN * 0.25 - VIENNA_iPV1MeasOffset_pu )*2.0;
@@ -1233,6 +1234,7 @@ static inline void readCurrVolADCSignals(void)
             VIENNA_VPV2_FB_3 + VIENNA_VPV2_FB_4)) *
             (float32_t)ADC_VPV_GAIN * 0.25f - VIENNA_vPV2MeasOffset_pu )*2.0;
 
+*/
 
     VIENNA_vDCMeas_pu = ( ((float32_t)(VIENNA_VDC_FB_1 + VIENNA_VDC_FB_2 +
             VIENNA_VDC_FB_3 + VIENNA_VDC_FB_4)) *
@@ -1304,7 +1306,7 @@ static inline void filter_signals2(void)
 #pragma FUNC_ALWAYS_INLINE(ControlCode_PVEmu)
 static inline void ControlCode_PVEmu(void)
 {
-    uint16_t duty1, duty2;
+//    uint16_t duty1, duty2;
 
 /*
 

@@ -14,7 +14,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL2
+#define   BUILDLEVEL LEVEL1
 
 #ifndef TRUE
 #define FALSE 0
@@ -35,19 +35,19 @@ This line sets the BUILDLEVEL to one of the available choices.
 #define ISR_FREQUENCY 10
 
 // Define the electrical motor parametes (1/4 hp Marathon Motor)
-#define RS 		11.05		        // Stator resistance (ohm) 
-#define RR   	6.11		        // Rotor resistance (ohm) 
-#define LS   	0.316423    	  	// Stator inductance (H) 
-#define LR   	0.316423	  		// Rotor inductance (H) 	
-#define LM   	0.293939	   		// Magnatizing inductance (H)
+#define RS 		2.76		        // Stator resistance (ohm)
+#define RR   	3.7091		        // Rotor resistance (ohm)
+#define LS   	0.3216    	  	// Stator inductance (H)
+#define LR   	0.3216	  		// Rotor inductance (H)
+#define LM   	0.3086	   		// Magnatizing inductance (H)
 #define POLES  	4					// Number of poles
 
 // Define the base quantites for PU system conversion
-#define BASE_VOLTAGE    236.174     // Base peak phase voltage (volt)
-#define BASE_CURRENT    10          // Base peak phase current (amp)
+#define BASE_VOLTAGE    230     // Base peak phase voltage (volt)
+#define BASE_CURRENT    14.1          // Base peak phase current (amp)
 #define BASE_TORQUE         		// Base torque (N.m)
 #define BASE_FLUX       		    // Base flux linkage (volt.sec/rad)
-#define BASE_FREQ      	120         // Base electrical frequency (Hz) 
+#define BASE_FREQ      	50         // Base electrical frequency (Hz)
 									// Note that 0.5 pu (1800 rpm) is max for Marathon motor 
 									// Above 1800 rpm, field weakening is needed.
 

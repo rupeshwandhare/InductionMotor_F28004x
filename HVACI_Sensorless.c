@@ -90,9 +90,9 @@ SPEED_MEAS_QEP speed1 = SPEED_MEAS_QEP_DEFAULTS;
 SPEED_MEAS_CAP speed2 = SPEED_MEAS_CAP_DEFAULTS;
 
 
-void init_motor(void);
+
 void HVDMC_Protection(void);
-void MotorISR(void);
+
 
 void init_motor(void)
 {
@@ -117,7 +117,7 @@ void init_motor(void)
     // Initialize the Speed module for capture eQEP based speed calculation (low speed range)
         speed2.InputSelect = 1;
         speed2.BaseRpm = 120*(BASE_FREQ/POLES);
-        speed2.SpeedScaler = 60*(SYSTEM_FREQUENCY*1000000/(1*2048*speed2.BaseRpm));
+        speed2.SpeedScaler = 50*(SYSTEM_FREQUENCY*1000000/(1*2048*speed2.BaseRpm));
 
     // Initialize the RAMPGEN module
         rg1.StepAngleMax = (BASE_FREQ*T);
@@ -189,7 +189,6 @@ void init_motor(void)
 //        HVDMC_Protection();
 
         clearPWM1Trip();
-
 }
 
 
