@@ -1242,10 +1242,15 @@ void MotorOperation(void)
     }
     else if (MACHINE_STATE == DEACCELERATION) {
 
-        if (speed_ref > 10) speed_ref = speed_ref - 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
-        if (speed_ref < -10) speed_ref = speed_ref + 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+        if (speed_ref > 10.0) speed_ref = speed_ref - 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+        if (speed_ref < -10.0) speed_ref = speed_ref + 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
 
-//        if (se1.WrHatRpm < 15rpm || )
+        if ((float32_t)se1.WrHatRpm < 15.0 ) {
+            if ((float32_t)se1.WrHatRpm > -15.0 ) {
+
+                MACHINE_STATE = IDLE_STATE;
+            }
+        }
     }
     else if (MACHINE_STATE == FAULT) {
         clearPWMTrip();

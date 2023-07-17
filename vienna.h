@@ -1465,7 +1465,7 @@ static inline void protections(void)
     }
     else if(VIENNA_vDCMeas_pu > 750.0)
 */
-/*
+
 
     if(VIENNA_vDCMeas_pu > 750.0)
     {
@@ -1484,6 +1484,7 @@ static inline void protections(void)
             VIENNA_boardStatus = vdc_undervoltage;
         }
 
+/*
     else if( (VIENNA_vPV1Meas_pu > update_const_vpv_overvoltage_threshold) || (VIENNA_vPV2Meas_pu > 500.0) )
     {
         EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
@@ -1500,6 +1501,7 @@ static inline void protections(void)
 
         VIENNA_boardStatus = vpv2_overvoltage;
     }
+*/
     else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL1_CUR_CMPSS_BASE))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
     {
         VIENNA_boardStatus = boardStatus_OverCurrentTrip_IL1;
@@ -1508,6 +1510,7 @@ static inline void protections(void)
     {
         VIENNA_boardStatus = boardStatus_OverCurrentTrip_IL2;
     }
+/*
 
     else if(VIENNA_CURR_TRIP_LATCH_STATUS(VIENNA_BOARD_PROT_IL3_CUR_CMPSS_BASE))   //??? LOOKS LIKE THERE IS SOME PROBLEM IN PASSING BASE ADDRESS
     {
@@ -1519,6 +1522,7 @@ static inline void protections(void)
         VIENNA_boardStatus = boardStatus_OverCurrentTrip;
     }
 
+*/
     else
     {
         VIENNA_boardStatus = boardStatus_NoFault;
@@ -1528,11 +1532,10 @@ static inline void protections(void)
 //        DisablePWM = SET;
         setDISABLE_PWM1();
         CONTROL_STATE = FAULT_STATE;
-        Screen_count = 9;
 //        LCD_ACTION = SCREEN9R1;
         common_flag_clearTripPWM1 = 0;
     }
-*/
+
 }
 
 
