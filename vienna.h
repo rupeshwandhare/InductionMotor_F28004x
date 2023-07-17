@@ -581,6 +581,8 @@ extern uint16_t Screen_count;
 
 extern volatile double xx;
 
+extern volatile uint16_t MACHINE_STATE;
+
 /*
 #pragma FUNC_ALWAYS_INLINE(VIENNA_readCurrVolADCSignals)
 

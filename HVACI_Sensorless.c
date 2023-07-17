@@ -93,11 +93,17 @@ extern Uint16 OnOffMotor;
 extern float speed_ref;
 
 void HVDMC_Protection(void);
+enum MCSTATE {DC_CHARGING=0, IDLE_STATE=1, INVERTER_ACTIVE=2, DEACCELERATION=3, FAULT=4};
+volatile uint16_t MACHINE_STATE=0;
+extern volatile uint16_t command_OnOff;
+volatile uint16_t command_Clear_fault;
+volatile uint16_t common_flag_clearTripPWM;
+volatile uint16_t common_flag_init_MotorGlobalVariable;
+Uint16 MotorActiveFlag =0;
 
 
 void init_motor(void)
 {
-
 
 /*
 
@@ -107,7 +113,6 @@ void init_motor(void)
         pwm1.Deadband  = 2.0*SYSTEM_FREQUENCY;          // 120 counts -> 2.0 usec for TBCLK = SYSCLK/1
         PWM_INIT_MACRO(1,2,3,pwm1)
 */
-
 
     // Initialize the Speed module for QEP based speed calculation
         speed1.K1 = (1/(BASE_FREQ*T));
@@ -189,12 +194,10 @@ void init_motor(void)
     //Call HVDMC Protection function
 //        HVDMC_Protection();
 
+        MACHINE_STATE = DC_CHARGING;
+        update_const_vdc_threshold_charging_to_idle = 500.0;
         clearPWM1Trip();
-}
-
-void MotorOperation(void)
-{
-
+        MotorActiveFlag =0;
 }
 
 
@@ -243,6 +246,7 @@ void C1(void) 	// Toggle GPIO-34
 float vars1=0.0;
 float vars2=0.0;
 
+
 //MainISR 
 void MotorISR(void)
 {
@@ -253,7 +257,7 @@ void MotorISR(void)
     readCurrVolADCSignals();
     filter_signals();
 
-    if (!OnOffMotor) { //NOT GOOD
+    if (!MotorActiveFlag) { //NOT GOOD
         return;
     }
 
@@ -1148,8 +1152,108 @@ interrupt void OffsetISR(void)
 }
 */
 
+#pragma FUNC_ALWAYS_INLINE(clearPWMTrip)
+static inline void clearPWMTrip(void)
+{
+    if(common_flag_clearTripPWM == 1)
+    {
+        //
+        // clear all the configured trip sources for the PWM module
+        EPWM_clearTripZoneFlag(EPWM1_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+        EPWM_clearTripZoneFlag(EPWM2_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
 
+        CMPSS_clearFilterLatchHigh(CMPSS1_BASE);
+        CMPSS_clearFilterLatchLow(CMPSS1_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS2_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS2_BASE);
+//        CMPSS_clearFilterLatchHigh(CMPSS5_BASE);
+//        CMPSS_clearFilterLatchLow(CMPSS5_BASE);
 
+        common_flag_clearTripPWM = 0;
+        init_motor();
+
+        //DisablePWM = CLEAR;
+        resetDISABLE_PWM1();
+//        resetDISABLE_PWM2();
+    }
+}
+
+//==============-------------
+#pragma FUNC_ALWAYS_INLINE(DCBus_Charging)
+static inline void DCBus_Charging(void)
+{
+    //Display_screen  "Preparing"  //make it to run only one time
+
+/*
+    //Turn OFF Relay
+    PowerRelay = OFF;
+    DisablePWM = SET;
+*/
+    resetPOWER_RELAY();
+    setDISABLE_PWM1();
+
+    count_charging4++;
+    if (count_charging4<20000) return;
+    count_charging4 = 0;
+    if (VIENNA_vDCMeas_pu > update_const_vdc_threshold_charging_to_idle) {
+        //Release Display_screen from  "Preparing"
+        //Turn ON Relay
+/*        PowerRelay = ON;*/
+        setPOWER_RELAY();
+        //PowerControl_State_Ptr1 = &Idle_State1;
+
+        MACHINE_STATE = IDLE_STATE;
+
+    }
+
+}
+
+#pragma FUNC_ALWAYS_INLINE(Idle_State)
+static inline void Idle_State(void)
+{
+//    if (!DisablePWM) DisablePWM = SET;
+    setDISABLE_PWM1();
+    if ( (command_OnOff) && (VIENNA_vDCMeas_pu > update_const_vdc_threshold_charging_to_idle)) {
+//        PowerRelay = ON;
+        setPOWER_RELAY();
+        //PowerControl_State_Ptr1 = &Slew_Control1;
+        MACHINE_STATE = INVERTER_ACTIVE;
+        common_flag_clearTripPWM = 1;
+/*
+
+        EALLOW;
+        EPwm1Regs.TZCLR.bit.OST = 1; //only for testing
+        EDIS;
+*/
+    }
+}
+
+void MotorOperation(void)
+{
+    if (MACHINE_STATE == INVERTER_ACTIVE) {
+
+        if (!MotorActiveFlag) MotorActiveFlag = 1;
+
+        if (!command_OnOff) MACHINE_STATE == DEACCELERATION;
+    }
+    else if (MACHINE_STATE == IDLE_STATE) {
+        Idle_State();
+    }
+    else if (MACHINE_STATE == DEACCELERATION) {
+
+        if (speed_ref > 10) speed_ref = speed_ref - 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+        if (speed_ref < -10) speed_ref = speed_ref + 0.45; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+
+//        if (se1.WrHatRpm < 15rpm || )
+    }
+    else if (MACHINE_STATE == FAULT) {
+        clearPWMTrip();
+    }
+    else if (MACHINE_STATE == DC_CHARGING) {
+        DCBus_Charging();
+    }
+}
 
 void HVDMC_Protection(void)
 {

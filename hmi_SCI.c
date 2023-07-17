@@ -32,6 +32,7 @@ unsigned char type_exchange;
 unsigned char index_var;
 unsigned char index_parameter;
 float transmitValue;
+volatile uint16_t command_OnOff=0;
 
 // union Float to handle casting of byte arrays to float
 typedef union _Float{
@@ -181,7 +182,7 @@ Uint16 True_password_SCIBT=0;
 float *Ptr_recieve_var;
 float speed_ref=0;
 
-Uint16 OnOffMotor = 0;
+Uint16 CommandOnOff = 0;
 
 
 void Process_SCI_Received_Data();
@@ -329,8 +330,8 @@ void Process_SCI_Received_Data(Float * receivedValue){
 
 
     if (received_char[0]==50) {  //command 0x01 for On and Off; received_char[0] holds command
-        if (OnOffMotor) OnOffMotor=0;
-        else OnOffMotor=1;
+        if (command_OnOff) command_OnOff=0;
+        else command_OnOff=1;
 
         ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }

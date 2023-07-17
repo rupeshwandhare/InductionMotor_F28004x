@@ -315,7 +315,6 @@ Uint16 j=0;
 void B3(void)   //3*500usec
 {
     //    setTimeCheck();
-    if (common_flag_init_GlobalVariable) initGlobalVariable();
 
     i++;
     if (i>667) {    //for 1sec
