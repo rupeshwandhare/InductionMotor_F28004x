@@ -17,7 +17,7 @@ float mo1=0.4;
 
 extern float vars1;
 extern float vars2;
-
+Uint16 select_varDAC=1;
 
 /*
 void Setup_Debug(void)
@@ -85,17 +85,31 @@ void sw_debug(void)
     }
     sample++;
 }
-/*
 
-void Setup_ePWM5(void)
+void setup_DAC_PWM(void)
 {
+    EALLOW;
+    //EPWM5A/5B
+    GpioCtrlRegs.GPAMUX1.bit.GPIO8 = 1;
+    GpioCtrlRegs.GPADIR.bit.GPIO8 = 1;
+    GpioCtrlRegs.GPAMUX1.bit.GPIO9 = 1;
+    GpioCtrlRegs.GPADIR.bit.GPIO9 = 1;
+    GpioCtrlRegs.GPAMUX1.bit.GPIO10 = 1;
+    GpioCtrlRegs.GPADIR.bit.GPIO10 = 1;
+    GpioCtrlRegs.GPAMUX1.bit.GPIO11 = 1;
+    GpioCtrlRegs.GPADIR.bit.GPIO11 = 1;
+
+    EDIS;
+
+
+
     // Initialization for EPwm5A and EPwm5B
     // = = = = = = = = = = = = = = = = = = = = = = = =
-    EPwm5Regs.TBPRD = 0x05DC; //0xBB8=3000; Set for 20kHz BB8/2=5DC used to shift
+    EPwm5Regs.TBPRD = 0x07D0; //0xBB8=3000; Set for 20kHz BB8/2=5DC used to shift
     //EPwm5Regs.CMPA.half.CMPA = 600; // Compare A = 350 TBCLK counts INITIAL DUTY CYCLE
     //EPwm5Regs.CMPB = 1800; // Compare B = 200 TBCLK counts INITIAL DUTY CYCLE
-    EPwm5Regs.TBPHS.half.TBPHS = 0x0000;
-    EPwm5Regs.TBPHS.half.TBPHSHR = 0x0000;
+//    EPwm5Regs.TBPHS.half.TBPHS = 0x0000;
+//    EPwm5Regs.TBPHS.half.TBPHSHR = 0x0000;
     EPwm5Regs.TBCTR = 0; // clear TB counter
     EPwm5Regs.TBCTL.bit.CTRMODE = 0x0; //TB_COUNT_UP 0x0
     EPwm5Regs.TBCTL.bit.PHSEN = 0x0;
@@ -116,11 +130,21 @@ void Setup_ePWM5(void)
 
 void hw_debug(void)
 {
-    EPwm5Regs.CMPA.half.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
-    EPwm5Regs.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+    if (select_varDAC==1) {
+        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+    }
+    if (select_varDAC==2) {
+        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+    }
+    if (select_varDAC==3) {
+        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+    }
 
 }
-*/
+
 
 
                 //DEBUGGING

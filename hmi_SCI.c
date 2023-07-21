@@ -183,7 +183,7 @@ float *Ptr_recieve_var;
 float speed_ref=0;
 
 Uint16 CommandOnOff = 0;
-
+extern Uint16 select_varDAC;
 
 void Process_SCI_Received_Data();
 
@@ -452,6 +452,10 @@ void Process_SCI_Received_Data(Float * receivedValue){
 */
 
 
+    }
+    else if (received_char[0]==0x06) {
+        select_varDAC++;
+        if (select_varDAC>4) select_varDAC=1;
     }
     else if (received_char[0]==0x07) {  //command 0x07 for SCI boot loading capacitor charge; received_char[0] holds command
 //        if (!True_password_SCIBT) return; //Provide protection lock

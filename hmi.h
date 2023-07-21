@@ -201,3 +201,6 @@ void CodeSecurity(void);
 void InitializeSCI(void);
 void trasmit_vars();
 void pickup_vars(void);
+
+void setup_DAC_PWM(void);
+void hw_debug(void);

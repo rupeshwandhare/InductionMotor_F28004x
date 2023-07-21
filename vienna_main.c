@@ -141,6 +141,9 @@ void main(void)
 
     VIENNA_HAL_setPinsAsPWM();  //Set GPIO as PWM pins, safe to setup PWM pins, as ADC and comparator based trips are active now, PWM were tripped low in the previous routine
 
+
+    setup_DAC_PWM();
+
     //
     // ISR Mapping
     //
@@ -301,6 +304,8 @@ void B1(void)    //3*500usec
 
 void B2(void)   //3*500usec
 {
+
+    hw_debug();
 
     //    VIENNA_HAL_toggleLED();
 
