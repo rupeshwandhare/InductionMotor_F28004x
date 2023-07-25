@@ -14,7 +14,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL2
+#define   BUILDLEVEL LEVEL4
 
 #ifndef TRUE
 #define FALSE 0
@@ -51,10 +51,6 @@ This line sets the BUILDLEVEL to one of the available choices.
 									// Note that 0.5 pu (1800 rpm) is max for Marathon motor 
 									// Above 1800 rpm, field weakening is needed.
 
-
-/* =================================================================================
-File name:       ACI_FE.H   (IQ version)
-===================================================================================*/
 
 #ifndef __ACI_FE_H__
 #define __ACI_FE_H__
@@ -94,6 +90,7 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
                   float32_t  OldEmf;          // Variable: Old back-emf term
                   float32_t  Sine;            // Variable: Sine term
                   float32_t  Cosine;          // Variable: Cosine term
+                  float32_t  tmp;             // temporary variable
                  } ACIFE;
 
 /*-----------------------------------------------------------------------------
@@ -134,6 +131,7 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
                           0,    /*  OldEmf  */      \
                           0,    /*  Sine  */        \
                           0,    /*  Cosine  */      \
+                          0,    /*  tmp  */         \
                         }
 
 /*------------------------------------------------------------------------------
@@ -144,23 +142,23 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
 #define ACIFE_MACRO(v)                                                          \
                                                                                 \
 /* Calculate Sine and Cosine terms for Park/IPark transformations   */          \
-    v.Sine   = sinf(v.ThetaFlux);                                               \
-    v.Cosine = cosf(v.ThetaFlux);                                               \
+    v.Sine   = sinf(v.ThetaFlux);                                           \
+    v.Cosine = cosf(v.ThetaFlux);                                           \
                                                                                 \
 /* Park transformation on the measured stator current*/                         \
-    v.IDsE = (v.IQsS*v.Sine);                                                   \
-    v.IDsE += (v.IDsS*v.Cosine);                                                \
+    v.IDsE = (v.IQsS*v.Sine);                                             \
+    v.IDsE += (v.IDsS*v.Cosine);                                          \
                                                                                 \
 /* The current model section (Classical Rotor Flux Vector Control Equation)*/   \
-    v.FluxDrE = (v.K1*v.FluxDrE) + (v.K2*v.IDsE);                               \
+    v.FluxDrE = (v.K1*v.FluxDrE) + (v.K2*v.IDsE);                   \
                                                                                 \
 /* Inverse park transformation on the rotor flux from the current model*/       \
-    v.FluxDrS = (v.FluxDrE*v.Cosine);                                           \
-    v.FluxQrS = (v.FluxDrE*v.Sine);                                             \
+    v.FluxDrS = (v.FluxDrE*v.Cosine);                                     \
+    v.FluxQrS = (v.FluxDrE*v.Sine);                                       \
                                                                                 \
 /* Compute the stator flux based on the rotor flux from current model*/         \
-    v.FluxDsS = (v.K3*v.FluxDrS) + (v.K4*v.IDsS);                               \
-    v.FluxQsS = (v.K3*v.FluxQrS) + (v.K4*v.IQsS);                               \
+    v.FluxDsS = (v.K3*v.FluxDrS) + (v.K4*v.IDsS);                   \
+    v.FluxQsS = (v.K3*v.FluxQrS) + (v.K4*v.IQsS);                   \
                                                                                 \
 /* Conventional PI controller section */                                        \
     v.Error =  v.PsiDsS - v.FluxDsS;                                            \
@@ -174,11 +172,11 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
 /* Compute the estimated stator flux based on the integral of back emf*/        \
     v.OldEmf = v.EmfDsS;                                                        \
     v.EmfDsS = v.UDsS - v.UCompDsS - (v.K5*v.IDsS);                       \
-    v.PsiDsS = v.PsiDsS + (0.5*(v.K6*(v.EmfDsS + v.OldEmf)));          \
+    v.PsiDsS = v.PsiDsS + 0.5*((v.K6*(v.EmfDsS + v.OldEmf)));          \
                                                                                 \
     v.OldEmf = v.EmfQsS;                                                        \
     v.EmfQsS = v.UQsS - v.UCompQsS - (v.K5*v.IQsS);                       \
-    v.PsiQsS = v.PsiQsS + (0.5*(v.K6*(v.EmfQsS + v.OldEmf)));          \
+    v.PsiQsS = v.PsiQsS + 0.5*((v.K6*(v.EmfQsS + v.OldEmf)));          \
                                                                                 \
 /* Estimate the rotor flux based on stator flux from the integral of back emf*/ \
                                                                                 \
@@ -186,9 +184,15 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
     v.PsiQrS = (v.K7*v.PsiQsS) - (v.K8*v.IQsS);                     \
                                                                                 \
 /* Compute the rotor flux angle*/                                               \
-    v.ThetaFlux = ((atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)) >= 0.0 ? (atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)):1.0 + (atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)))
+    v.tmp = ( atan2f(v.PsiQrS,v.PsiDrS) ) ;                                     \
+    if (v.tmp >=0.0)                                                            \
+        v.ThetaFlux = v.tmp;                                                    \
+    else                                                                        \
+        v.ThetaFlux = v.tmp + 6.283185307;
+    //((atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)) >= 0.0 ? (atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)):1.0 + (atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)));
 
 #endif // __ACI_FE_H__
+
 
 
 /* =================================================================================
@@ -314,7 +318,7 @@ Default initalizer for the ACISE object.
     v.WSlip= (v.WSlip/v.SquaredPsi);                                      \
                                                                                 \
 /*  Synchronous speed computation   */                                          \
-    if ((v.ThetaFlux < DIFF_MAX_LIMIT)&(v.ThetaFlux > DIFF_MIN_LIMIT))          \
+    if ((v.ThetaFlux < 0.8)&(v.ThetaFlux > 0.2))          \
 /*  Q21 = Q21*(GLOBAL_Q-GLOBAL_Q)*/                                             \
           v.WSyn = (v.K2*(v.ThetaFlux - v.OldThetaFlux));                 \
     else  v.WSyn = v.WPsi;                                                      \
@@ -327,8 +331,11 @@ Default initalizer for the ACISE object.
     v.WrHat = v.WPsi - (v.WSlip);                                      \
                                                                                 \
 /* Limit the estimated speed between -1 and 1 per-unit */                       \
-    v.WrHat= (v.WrHat>float32_t(1)) ? float32_t(1) : ((v.WrHat<float32_t(-1))? float32_t(-1) : v.WrHat )  \
-                                                                                \
+    if (v.WrHat>1.0)    \
+        v.WrHat=1.0;    \
+    if (v.WrHat< -1.0)  \
+        v.WrHat = -1.0; \
+                                                                          \
 /* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q */                               \
     v.WrHatRpm = (v.BaseRpm*v.WrHat);
 

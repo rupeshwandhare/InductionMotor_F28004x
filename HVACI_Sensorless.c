@@ -517,16 +517,19 @@ void MotorISR(void)
 //  Call the QEP macro (if incremental encoder used for speed sensing)
 //  Connect inputs of the SPEED_FR module and call the speed calculation macro
 // ------------------------------------------------------------------------------ 
-    QEP_MACRO(1,qep1)
+//    QEP_MACRO(1,qep1)
+/*
 
     speed1.ElecTheta = qep1.ElecTheta;
     speed1.DirectionQep = (int32)(qep1.DirectionQep);
     SPEED_FR_MACRO(speed1)
+*/
 
 // ------------------------------------------------------------------------------
 //  Call the CAP macro (if sprocket or spur gear used for speed sensing)
 //  Connect inputs of the SPEED_PR module and call the speed calculation macro
 // ------------------------------------------------------------------------------ 
+/*
 	CAP_MACRO(1,cap1) 
 
     if(cap1.CapReturn ==0)             				     // Check the capture return
@@ -534,6 +537,8 @@ void MotorISR(void)
         speed2.EventPeriod=(int32)(cap1.EventPeriod);    // Read out new event period
         SPEED_PR_MACRO(speed2)                 			 // Call the speed macro      
     } 
+*/
+
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the VOLT_CALC module and call the phase voltage calc. macro
@@ -554,6 +559,7 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------
 //  Connect inputs of the SVGEN_DQ module and call the space-vector gen. macro
 // ------------------------------------------------------------------------------
+
   	svgen1.Ualpha = ipark1.Alpha;
  	svgen1.Ubeta = ipark1.Beta;
   	SVGENDQ_MACRO(svgen1)        
@@ -628,8 +634,8 @@ void MotorISR(void)
 	park1.Alpha = clarke1.Alpha;
 	park1.Beta  = clarke1.Beta;
 	park1.Angle = rg1.Out;
-	park1.Sine  = _IQsinPU(park1.Angle);
-	park1.Cosine= _IQcosPU(park1.Angle);
+	park1.Sine  = sinf(park1.Angle);
+	park1.Cosine= cosf(park1.Angle);
 	PARK_MACRO(park1) 
  
 // ------------------------------------------------------------------------------
@@ -659,6 +665,7 @@ void MotorISR(void)
 //  Call the QEP macro (if incremental encoder used for speed sensing)
 //  Connect inputs of the SPEED_FR module and call the speed calculation macro
 // ------------------------------------------------------------------------------ 
+/*
     QEP_MACRO(1,qep1)
 
     speed1.ElecTheta = qep1.ElecTheta;
@@ -676,6 +683,7 @@ void MotorISR(void)
         speed2.EventPeriod=(int32)(cap1.EventPeriod);    // Read out new event period
         SPEED_PR_MACRO(speed2)                 			 // Call the speed macro      
     } 
+*/
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the VOLT_CALC module and call the phase voltage calc. macro
@@ -719,6 +727,7 @@ void MotorISR(void)
  	svgen1.Ubeta = ipark1.Beta;
   	SVGENDQ_MACRO(svgen1)        
 
+/*
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PWM_DRV module and call the PWM signal generation macro
 // ------------------------------------------------------------------------------
@@ -745,6 +754,7 @@ void MotorISR(void)
     DlogCh2 = _IQtoQ15(fe1.PsiDrS);
     DlogCh3 = _IQtoQ15(fe1.ThetaFlux);
     DlogCh4 = _IQtoQ15(clarke1.As);  
+*/
 
 #endif // (BUILDLEVEL==LEVEL4)
 
