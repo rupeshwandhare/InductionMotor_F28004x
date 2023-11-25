@@ -14,7 +14,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL4
+#define   BUILDLEVEL LEVEL6
 
 #ifndef TRUE
 #define FALSE 0
@@ -966,3 +966,195 @@ Default initalizer for the SPEED_MEAS_QEP object.
     v.SpeedRpm = (v.BaseRpm*v.Speed);
 
 #endif // __SPEED_FR_H__
+
+
+//***** Additional Micro added as below for PMSM on a top of above micro required for IM ***//
+
+       /* =================================================================================
+       File name:       SMOPOS.H
+       ==================================================================================*/
+       #ifndef __SMOPOS_H__
+       #define __SMOPOS_H__
+
+
+       typedef struct {  float32_t  Valpha;      // Input: Stationary alfa-axis stator voltage
+                         float32_t  Ealpha;      // Variable: Stationary alfa-axis back EMF
+                         float32_t  Zalpha;      // Output: Stationary alfa-axis sliding control
+                         float32_t  Gsmopos;     // Parameter: Motor dependent control gain
+                         float32_t  EstIalpha;   // Variable: Estimated stationary alfa-axis stator current
+                         float32_t  Fsmopos;     // Parameter: Motor dependent plant matrix
+                         float32_t  Vbeta;       // Input: Stationary beta-axis stator voltage
+                         float32_t  Ebeta;       // Variable: Stationary beta-axis back EMF
+                         float32_t  Zbeta;       // Output: Stationary beta-axis sliding control
+                         float32_t  EstIbeta;    // Variable: Estimated stationary beta-axis stator current
+                         float32_t  Ialpha;      // Input: Stationary alfa-axis stator current
+                         float32_t  IalphaError; // Variable: Stationary alfa-axis current error
+                         float32_t  Kslide;      // Parameter: Sliding control gain
+                         float32_t  Ibeta;       // Input: Stationary beta-axis stator current
+                         float32_t  IbetaError;  // Variable: Stationary beta-axis current error
+                         float32_t  Kslf;        // Parameter: Sliding control filter gain
+                         float32_t  Theta;       // Output: Compensated rotor angle
+                         float32_t  E0;          // Parameter: 0.5
+                         float32_t  tmp;         //
+                        } SMOPOS;
+
+       /*-----------------------------------------------------------------------------
+       Default initalizer for the SMOPOS object.
+       -----------------------------------------------------------------------------*/
+       #define SMOPOS_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0, \
+                                  0,0,0,0,0,0,float32_t(0.5),0   \
+                               }
+
+       /*------------------------------------------------------------------------------
+       Prototypes for the functions in SMOPOS.C
+       ------------------------------------------------------------------------------*/
+
+       #define SMO_MACRO(v)                                                                                    \
+                                                                                                               \
+           /*  Sliding mode current observer   */                                                              \
+           v.EstIalpha = (v.Fsmopos*v.EstIalpha) + (v.Gsmopos*(v.Valpha-v.Ealpha-v.Zalpha));       \
+           v.EstIbeta  = (v.Fsmopos*v.EstIbeta)  + (v.Gsmopos*(v.Vbeta -v.Ebeta -v.Zbeta ));       \
+                                                                                                               \
+           /*  Current errors  */                                                                              \
+           v.IalphaError = v.EstIalpha - v.Ialpha;                                                             \
+           v.IbetaError  = v.EstIbeta  - v.Ibeta;                                                              \
+                                                                                                               \
+           /*  Sliding control calculator  */                                                                  \
+           /* v.Zalpha=v.IalphaError*v.Kslide/v.E0) where E0=0.5 here*/                                        \
+           v.Zalpha = (_IQsat(v.IalphaError,v.E0,-v.E0)* 2*(v.Kslide));                              \
+           v.Zbeta  = (_IQsat(v.IbetaError ,v.E0,-v.E0)* 2*(v.Kslide));                              \
+                                                                                                               \
+           /*  Sliding control filter -> back EMF calculator   */                                              \
+           v.Ealpha = v.Ealpha + (v.Kslf*(v.Zalpha-v.Ealpha));                                           \
+           v.Ebeta  = v.Ebeta  + (v.Kslf*(v.Zbeta -v.Ebeta));                                            \
+                                                                                                               \
+           /*  Rotor angle calculator -> Theta = atan(-Ealpha,Ebeta)   */                                      \
+           /*v.Theta = _IQatan2PU(-v.Ealpha,v.Ebeta); */                                                   \
+           /* Compute the rotor flux angle*/                                               \
+           v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) ) ;                                     \
+                            if (v.tmp >=0.0)                                                            \
+                                v.ThetaFlux = v.tmp;                                                    \
+                            else                                                                        \
+                                v.ThetaFlux = v.tmp + 6.283185307;
+       #endif
+
+
+
+           /* Extended version of sliding control calculator
+           if (_IQabs(v.IalphaError) < E0)
+              v.Zalpha = _IQmpy(v.Kslide,_IQdiv(v.IalphaError,E0));
+           else if (v.IalphaError >= E0)
+              v.Zalpha = v.Kslide;
+           else if (v.IalphaError <= -E0)
+              v.Zalpha = -v.Kslide;
+
+           if (_IQabs(v.IbetaError) < E0)
+              v.Zbeta = _IQmpy(v.Kslide,_IQdiv(v.IbetaError,E0));
+           else if (v.IbetaError >= E0)
+              v.Zbeta = v.Kslide;
+           else if (v.IbetaError <= -E0)
+              v.Zbeta = -v.Kslide;
+       */
+
+
+
+                        /* =================================================================================
+                        File name:       SMOPOS_CONST.H
+                        ===================================================================================*/
+                        #ifndef __SMOPOS_CONST_H__
+                        #define __SMOPOS_CONST_H__
+
+                        typedef struct  { float32_t  Rs;              // Input: Stator resistance (ohm)
+                                          float32_t  Ls;              // Input: Stator inductance (H)
+                                          float32_t  Ib;              // Input: Base phase current (amp)
+                                          float32_t  Vb;              // Input: Base phase voltage (volt)
+                                          float32_t  Ts;              // Input: Sampling period in sec
+                                          float32_t  Fsmopos;         // Output: constant using in observed current calculation
+                                          float32_t  Gsmopos;         // Output: constant using in observed current calculation
+
+                                        } SMOPOS_CONST;
+
+                        /*-----------------------------------------------------------------------------
+                        Default initalizer for the SMOPOS_CONST object.
+                        -----------------------------------------------------------------------------*/
+                        #define SMOPOS_CONST_DEFAULTS {0,0,0,0,0,0,0, \
+                                                    }
+
+                        /*------------------------------------------------------------------------------
+                        Prototypes for the functions in SMOPOS_CONST.C
+                        ------------------------------------------------------------------------------*/
+
+                        #define SMO_CONST_MACRO(v)                              \
+                                                                                \
+                            v.Fsmopos = exp((-v.Rs/v.Ls)*(v.Ts));               \
+                            v.Gsmopos = (v.Vb/v.Ib)*(1/v.Rs)*(1-v.Fsmopos);
+
+                        #endif
+
+
+
+                                        /* =================================================================================
+                                        File name:        SPEED_EST.H
+                                        ===================================================================================*/
+
+
+                                        #ifndef __SPEED_EST_H__
+                                        #define __SPEED_EST_H__
+
+                                        typedef struct {
+                                               float32_t EstimatedTheta;      // Input: Electrical angle (pu)
+                                               float32_t OldEstimatedTheta;   // History: Electrical angle at previous step (pu)
+                                               float32_t EstimatedSpeed;      // Output: Estimated speed in per-unit  (pu)
+                                               Uint32 BaseRpm;          // Parameter: Base speed in rpm (Q0) - independently with global Q
+                                               float32_t K1;                // Parameter: Constant for differentiator (Q21) - independently with global Q
+                                               float32_t K2;                  // Parameter: Constant for low-pass filter (pu)
+                                               float32_t K3;                  // Parameter: Constant for low-pass filter (pu)
+                                               int32 EstimatedSpeedRpm; // Output : Estimated speed in rpm  (Q0) - independently with global Q
+                                               float32_t Temp;                // Variable : Temp variable
+                                               } SPEED_ESTIMATION;      // Data type created
+
+
+                                        /*-----------------------------------------------------------------------------
+                                        Default initalizer for the SPEED_ESTIMATION object.
+                                        -----------------------------------------------------------------------------*/
+                                        #define SPEED_ESTIMATION_DEFAULTS   { 0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                            }
+
+                                        #define SE_DIFF_MAX_LIMIT   (0.85)
+                                        #define SE_DIFF_MIN_LIMIT   (0.15)
+                                        /*------------------------------------------------------------------------------
+                                         SPEED_EST Macro Definition
+                                        ------------------------------------------------------------------------------*/
+
+
+                                        #define SE_MACRO(v)                                                                 \
+                                        if ((v.EstimatedTheta < SE_DIFF_MAX_LIMIT)&(v.EstimatedTheta > SE_DIFF_MIN_LIMIT))  \
+                                            v.Temp = (v.K1*(v.EstimatedTheta - v.OldEstimatedTheta));                 \
+                                        /*  Q21 = Q21*(GLOBAL_Q-GLOBAL_Q) */                                                \
+                                        else v.Temp = (v.EstimatedSpeed);                                          \
+                                                                                                                            \
+                                        /* Low-pass filter */                                                               \
+                                        /* Q21 = GLOBAL_Q*Q21 + GLOBAL_Q*Q21 */                                             \
+                                            v.Temp = (v.K2*(v.EstimatedSpeed))+(v.K3*v.Temp);          \
+                                                                                                                            \
+                                        /* Saturate the output */                                                           \
+                                            v.Temp=_IQsat(v.Temp,(1),(-1));                                       \
+                                            v.EstimatedSpeed = (v.Temp);                                           \
+                                                                                                                            \
+                                        /* Update the electrical angle */                                                   \
+                                            v.OldEstimatedTheta = v.EstimatedTheta;                                         \
+                                                                                                                            \
+                                        /* Change motor speed from pu value to rpm value (GLOBAL_Q -> Q0)*/                 \
+                                        /* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q*/                                    \
+                                            v.EstimatedSpeedRpm = (v.BaseRpm*v.EstimatedSpeed);
+                                        #endif // __SPEED_EST_H__
+
+
