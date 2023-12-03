@@ -11,6 +11,10 @@ Following is the list of the Build Level choices.
 #define LEVEL5  5           // Speed PI regulator test (Sensored closed-loop FOC system) 
 #define LEVEL6  6           // Sensorless closed-loop FOC system
 
+#define ACIM 1
+#define PMSM 2
+#define SELECT_MACHINE PMSM
+
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
@@ -34,6 +38,7 @@ This line sets the BUILDLEVEL to one of the available choices.
 // Define the ISR frequency (kHz)
 #define ISR_FREQUENCY 10
 
+#if (SELECT_MACHINE == ACIM)
 // Define the electrical motor parametes (1/4 hp Marathon Motor)
 #define RS 		2.76		        // Stator resistance (ohm)
 #define RR   	3.7091		        // Rotor resistance (ohm)
@@ -50,7 +55,26 @@ This line sets the BUILDLEVEL to one of the available choices.
 #define BASE_FREQ      	50         // Base electrical frequency (Hz)
 									// Note that 0.5 pu (1800 rpm) is max for Marathon motor 
 									// Above 1800 rpm, field weakening is needed.
+#endif
 
+#if (SELECT_MACHINE == PMSM)
+// Define the electrical motor parametes (1/4 hp Marathon Motor)
+#define RS      2.8                // Stator resistance (ohm)
+#define RR                        // Rotor resistance (ohm)
+#define LS      0.00753           // Stator inductance (H)
+#define LR                      // Rotor inductance (H)
+#define LM                      // Magnatizing inductance (H)
+#define POLES   2                   // Number of poles
+
+// Define the base quantites for PU system conversion
+#define BASE_VOLTAGE    196.3       //340/sqrt(3) Base peak phase voltage (volt)
+#define BASE_CURRENT    14.0          // Base peak phase current (amp)
+#define BASE_TORQUE                 // Base torque (N.m)
+#define BASE_FLUX                   // Base flux linkage (volt.sec/rad)
+#define BASE_FREQ       50         // Base electrical frequency (Hz)
+                                    // Note that 0.5 pu (1800 rpm) is max for Marathon motor
+                                    // Above 1800 rpm, field weakening is needed.
+#endif
 
 #ifndef __ACI_FE_H__
 #define __ACI_FE_H__

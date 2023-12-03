@@ -28,6 +28,7 @@ float32_t K2=(0.001999);   //Offset filter coefficient K2: T/(T+0.05);
 extern float32_t IQsinTable[];
 extern float32_t IQcosTable[];
 
+#if (SELECT_MACHINE == ACIM)
 float32_t VdTesting = (0.2);           // Vd reference (pu)
 float32_t VqTesting = (0.2);           // Vq reference (pu)
 float32_t IdRef = (0.1);               // Id reference (pu)
@@ -35,6 +36,19 @@ float32_t IqRef = (0.05);              // Iq reference (pu)
 float32_t SpeedRef = (0.3);            // Speed reference (pu)
 
 float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
+#endif
+
+#if (SELECT_MACHINE == PMSM)
+float32_t VdTesting = (0.0);           // Vd reference (pu)
+float32_t VqTesting = (0.15);           // Vq reference (pu)
+float32_t IdRef = (0.0);               // Id reference (pu)
+float32_t IqRef = (0.1);              // Iq reference (pu)
+float32_t SpeedRef = (0.3);            // Speed reference (pu)
+
+float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
+#endif
+
+
 
 Uint32 IsrTicker = 0;
 Uint16 BackTicker = 0;
@@ -53,6 +67,14 @@ ACISE se1 = ACISE_DEFAULTS;
 // Instance the constant calculations for rotor flux and speed estimations
 ACIFE_CONST fe1_const = ACIFE_CONST_DEFAULTS;
 ACISE_CONST se1_const = ACISE_CONST_DEFAULTS;
+
+#if (SELECT_MACHINE == PMSM)
+// Instance a position estimator
+SMOPOS smo1 = SMOPOS_DEFAULTS;
+// Instance a sliding-mode position observer constant Module
+SMOPOS_CONST smo1_const = SMOPOS_CONST_DEFAULTS;
+#endif
+
 
 // Instance a few transform objects (ICLARKE is added in SVGEN module)
 CLARKE clarke1 = CLARKE_DEFAULTS;
@@ -88,6 +110,11 @@ SPEED_MEAS_QEP speed1 = SPEED_MEAS_QEP_DEFAULTS;
 
 // Instance a speed calculator based on capture Qep (for eQep of 280x only)
 SPEED_MEAS_CAP speed2 = SPEED_MEAS_CAP_DEFAULTS;
+
+#if (SELECT_MACHINE == PMSM)
+// Instance a speed calculator based on sliding-mode position observer
+SPEED_ESTIMATION speed3 = SPEED_ESTIMATION_DEFAULTS;
+#endif
 
 extern Uint16 OnOffMotor;
 extern float speed_ref;
@@ -128,6 +155,14 @@ void init_motor(void)
     // Initialize the RAMPGEN module
         rg1.StepAngleMax = (BASE_FREQ*T);
 
+#if (SELECT_MACHINE == PMSM)
+    // Initialize the SPEED_EST module SMOPOS based speed calculation
+        speed3.K1 = (1/(BASE_FREQ*T)); //_IQ21(1/(BASE_FREQ*T));
+        speed3.K2 = (1/(1+T*2*PI*5)); //_IQ(1/(1+T*2*PI*5));  // Low-pass cut-off frequency
+        speed3.K3 = (1)-speed3.K2; //_IQ(1)-speed3.K2;
+        speed3.BaseRpm = 120*(BASE_FREQ/POLES);
+#endif
+
     // Initialize the aci flux estimator constants module
         fe1_const.Rs = RS;
         fe1_const.Rr = RR;
@@ -166,6 +201,22 @@ void init_motor(void)
         se1.K4 = (se1_const.K4);
         se1.BaseRpm = 120*BASE_FREQ/POLES;
 
+#if (SELECT_MACHINE == PMSM)
+    // Initialize the SMOPOS constant module
+        smo1_const.Rs = RS;
+        smo1_const.Ls = LS;
+        smo1_const.Ib = BASE_CURRENT;
+        smo1_const.Vb = BASE_VOLTAGE;
+        smo1_const.Ts = T;
+        SMO_CONST_MACRO(smo1_const)
+
+    // Initialize the SMOPOS module
+        smo1.Fsmopos = smo1_const.Fsmopos; //_IQ(smo1_const.Fsmopos);
+        smo1.Gsmopos = smo1_const.Gsmopos; //_IQ(smo1_const.Gsmopos);
+        smo1.Kslide  = 0.05308703613;   //_IQ(0.05308703613);
+        smo1.Kslf = 0.1057073975;  //_IQ(0.1057073975);
+#endif
+
     // Initialize the PI module for Id
         pi_spd.Kp=(2.0);
         pi_spd.Ki=(T*SpeedLoopPrescaler/0.5);
@@ -183,6 +234,26 @@ void init_motor(void)
         pi_iq.Ki=(T/0.004);
         pi_iq.Umax =(0.8);
         pi_iq.Umin =(-0.8);
+
+#if (SELECT_MACHINE == PMSM)
+    // Initialize the PI module for speed
+        pi_spd.Kp=(1.5);
+        pi_spd.Ki=(T*SpeedLoopPrescaler/0.5);
+        pi_spd.Umax =(0.95);
+        pi_spd.Umin =(-0.95);
+
+    // Initialize the PI module for Id
+        pi_id.Kp=(1.0);
+        pi_id.Ki=(T/0.04);
+        pi_id.Umax =(0.4);
+        pi_id.Umin =(-0.4);
+
+    // Initialize the PI module for Iq
+        pi_iq.Kp=(1.0);
+        pi_iq.Ki=(T/0.04);
+        pi_iq.Umax =(0.8);
+        pi_iq.Umin =(-0.8);
+#endif
 
     //  Note that the vectorial sum of d-q PI outputs should be less than 1.0 which refers to maximum duty cycle for SVGEN.
     //  Another duty cycle limiting factor is current sense through shunt resistors which depends on hardware/software implementation.
@@ -979,8 +1050,15 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------ 
     park1.Alpha = clarke1.Alpha;
     park1.Beta  = clarke1.Beta;
-	if(lsw==0) park1.Angle = rg1.Out;
+
+    if(lsw==0) park1.Angle = rg1.Out;
 	else park1.Angle = fe1.ThetaFlux;
+
+#if (SELECT_MACHINE == PMSM)
+	if(lsw==1) park1.Angle = rg1.Out;
+    else park1.Angle = smo1.Theta;
+#endif
+
 	park1.Sine = sin(park1.Angle);
 	park1.Cosine = cos(park1.Angle);
 	PARK_MACRO(park1)
@@ -992,7 +1070,10 @@ void MotorISR(void)
      {
       pi_spd.Ref = rc1.SetpointValue;
       pi_spd.Fbk = se1.WrHat;
-	  PI_MACRO(pi_spd)
+#if (SELECT_MACHINE == PMSM)
+      pi_spd.Fbk = speed3.EstimatedSpeed;
+#endif
+      PI_MACRO(pi_spd)
       SpeedLoopCount=1;
      }
 	else SpeedLoopCount++;  
@@ -1009,7 +1090,7 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PI module and call the PI ID controller macro
 // ------------------------------------------------------------------------------  
-    pi_id.Ref = IdRef;
+    pi_id.Ref = IdRef;      //**SLIGHT POSITIVE FOR PMSM Idref=0.05**//
 	pi_id.Fbk = park1.Ds;
 	PI_MACRO(pi_id)
 
@@ -1059,6 +1140,21 @@ void MotorISR(void)
 	fe1.IQsS = clarke1.Beta;
 	ACIFE_MACRO(fe1)
 
+#if (SELECT_MACHINE == PMSM)
+// ------------------------------------------------------------------------------
+//    Connect inputs of the SMO_POS module and call the sliding-mode observer macro
+// ------------------------------------------------------------------------------
+    if (lsw==1 && smo1.Kslide<_IQ(0.25)) smo1.Kslide=smo1.Kslide+_IQ(0.00001);
+    // Increase Kslide for better torque response after closing the speed loop
+    // Low Kslide responds better to loop transients
+
+    smo1.Ialpha = clarke1.Alpha;
+    smo1.Ibeta  = clarke1.Beta;
+    smo1.Valpha = volt1.Valpha;
+    smo1.Vbeta  = volt1.Vbeta;
+    SMO_MACRO(smo1)
+#endif
+
 // ------------------------------------------------------------------------------
 //    Connect inputs of the ACI module and call the speed estimation macro
 // ------------------------------------------------------------------------------
@@ -1068,6 +1164,11 @@ void MotorISR(void)
 	se1.PsiQrS = fe1.PsiQrS;
 	se1.ThetaFlux = fe1.ThetaFlux; 
 	ACISE_MACRO(se1)
+
+#if (SELECT_MACHINE == PMSM)
+    speed3.EstimatedTheta = smo1.Theta;
+    SE_MACRO(speed3)
+#endif
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the SVGEN_DQ module and call the space-vector gen. macro
