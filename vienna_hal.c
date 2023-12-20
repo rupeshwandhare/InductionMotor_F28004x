@@ -116,13 +116,13 @@ void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3, uint16_t pwm_perio
 
     EPWM_enablePhaseShiftLoad(base2);
     EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base2, 667);
+    EPWM_setPhaseShift(base2, 0);
     EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 
 
     EPWM_enablePhaseShiftLoad(base3);
     EPWM_setSyncOutPulseMode(base3, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base3, 1333);
+    EPWM_setPhaseShift(base3, 0);
     EPWM_setCountModeAfterSync(base3, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 }
 
@@ -446,11 +446,14 @@ void setupADC(void)
 */
 
     //
-    // vDCMeas1
+    // vDCMeas1 **********************************************************************************************************************************************
     //
-    ADC_setupSOC(VIENNA_VDC_ADC_MODULE, VIENNA_VDC_ADC_SOC_NO_1,
-                 VIENNA_VDC_ADC_TRIG_SOURCE,
-                 VIENNA_VDC_ADC_PIN, VIENNA_VDC_ACQPS_SYS_CLKS);
+//    ADC_setupSOC(VIENNA_VDC_ADC_MODULE, VIENNA_VDC_ADC_SOC_NO_1,
+//                 VIENNA_VDC_ADC_TRIG_SOURCE,
+//                 VIENNA_VDC_ADC_PIN, VIENNA_VDC_ACQPS_SYS_CLKS);
+    // **********************************************************************************************************************************************
+
+
     //
     // vCCMeas1
     //

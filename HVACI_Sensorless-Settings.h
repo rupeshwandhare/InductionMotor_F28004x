@@ -8,13 +8,17 @@ Following is the list of the Build Level choices.
 #define LEVEL2  2           // Verify ADC, park/clarke, calibrate the offset 
 #define LEVEL3  3           // Two current PI regulator test, speed measurement 
 #define LEVEL4  4           // Flux and speed estimator tests 
-#define LEVEL5  5           // Speed PI regulator test (Sensored closed-loop FOC system) 
+//#define LEVEL5  5           // Speed PI regulator test (Sensored closed-loop FOC system)
 #define LEVEL6  6           // Sensorless closed-loop FOC system
+
+#define ACIM 1
+#define PMSM 2
+#define SELECT_MACHINE ACIM
 
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL2
+#define   BUILDLEVEL LEVEL6
 
 #ifndef TRUE
 #define FALSE 0
@@ -34,6 +38,7 @@ This line sets the BUILDLEVEL to one of the available choices.
 // Define the ISR frequency (kHz)
 #define ISR_FREQUENCY 10
 
+#if (SELECT_MACHINE == ACIM)
 // Define the electrical motor parametes (1/4 hp Marathon Motor)
 #define RS 		2.76		        // Stator resistance (ohm)
 #define RR   	3.7091		        // Rotor resistance (ohm)
@@ -43,18 +48,34 @@ This line sets the BUILDLEVEL to one of the available choices.
 #define POLES  	4					// Number of poles
 
 // Define the base quantites for PU system conversion
-#define BASE_VOLTAGE    230     // Base peak phase voltage (volt)
+#define BASE_VOLTAGE    587     // Base peak phase voltage (volt)
 #define BASE_CURRENT    14.1          // Base peak phase current (amp)
 #define BASE_TORQUE         		// Base torque (N.m)
 #define BASE_FLUX       		    // Base flux linkage (volt.sec/rad)
-#define BASE_FREQ      	50         // Base electrical frequency (Hz)
+#define BASE_FREQ      	50         // Base electrical frequency (Hz)  //// modified to 100 Hz - 4/08/23 - 4:50pm
 									// Note that 0.5 pu (1800 rpm) is max for Marathon motor 
 									// Above 1800 rpm, field weakening is needed.
+#endif
+
+#if (SELECT_MACHINE == PMSM)
+// Define the electrical motor parametes (1/4 hp Marathon Motor)
+#define RS      2.8                // Stator resistance (ohm)
+#define RR                        // Rotor resistance (ohm)
+#define LS      0.00753           // Stator inductance (H)
+#define LR                      // Rotor inductance (H)
+#define LM                      // Magnatizing inductance (H)
+#define POLES   2                   // Number of poles
 
 
-/* =================================================================================
-File name:       ACI_FE.H   (IQ version)
-===================================================================================*/
+// Define the base quantites for PU system conversion
+#define BASE_VOLTAGE    196.3       //340/sqrt(3) Base peak phase voltage (volt)
+#define BASE_CURRENT    14.0          // Base peak phase current (amp)
+#define BASE_TORQUE                 // Base torque (N.m)
+#define BASE_FLUX                   // Base flux linkage (volt.sec/rad)
+#define BASE_FREQ       50         // Base electrical frequency (Hz)
+                                    // Note that 0.5 pu (1800 rpm) is max for Marathon motor
+                                    // Above 1800 rpm, field weakening is needed.
+#endif
 
 #ifndef __ACI_FE_H__
 #define __ACI_FE_H__
@@ -94,6 +115,7 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
                   float32_t  OldEmf;          // Variable: Old back-emf term
                   float32_t  Sine;            // Variable: Sine term
                   float32_t  Cosine;          // Variable: Cosine term
+                  float32_t  tmp;             // temporary variable
                  } ACIFE;
 
 /*-----------------------------------------------------------------------------
@@ -134,6 +156,7 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
                           0,    /*  OldEmf  */      \
                           0,    /*  Sine  */        \
                           0,    /*  Cosine  */      \
+                          0,    /*  tmp  */         \
                         }
 
 /*------------------------------------------------------------------------------
@@ -144,23 +167,23 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
 #define ACIFE_MACRO(v)                                                          \
                                                                                 \
 /* Calculate Sine and Cosine terms for Park/IPark transformations   */          \
-    v.Sine   = sinf(v.ThetaFlux);                                               \
-    v.Cosine = cosf(v.ThetaFlux);                                               \
+    v.Sine   = sinf(v.ThetaFlux);                                           \
+    v.Cosine = cosf(v.ThetaFlux);                                           \
                                                                                 \
 /* Park transformation on the measured stator current*/                         \
-    v.IDsE = (v.IQsS*v.Sine);                                                   \
-    v.IDsE += (v.IDsS*v.Cosine);                                                \
+    v.IDsE = (v.IQsS*v.Sine);                                             \
+    v.IDsE += (v.IDsS*v.Cosine);                                          \
                                                                                 \
 /* The current model section (Classical Rotor Flux Vector Control Equation)*/   \
-    v.FluxDrE = (v.K1*v.FluxDrE) + (v.K2*v.IDsE);                               \
+    v.FluxDrE = (v.K1*v.FluxDrE) + (v.K2*v.IDsE);                   \
                                                                                 \
 /* Inverse park transformation on the rotor flux from the current model*/       \
-    v.FluxDrS = (v.FluxDrE*v.Cosine);                                           \
-    v.FluxQrS = (v.FluxDrE*v.Sine);                                             \
+    v.FluxDrS = (v.FluxDrE*v.Cosine);                                     \
+    v.FluxQrS = (v.FluxDrE*v.Sine);                                       \
                                                                                 \
 /* Compute the stator flux based on the rotor flux from current model*/         \
-    v.FluxDsS = (v.K3*v.FluxDrS) + (v.K4*v.IDsS);                               \
-    v.FluxQsS = (v.K3*v.FluxQrS) + (v.K4*v.IQsS);                               \
+    v.FluxDsS = (v.K3*v.FluxDrS) + (v.K4*v.IDsS);                   \
+    v.FluxQsS = (v.K3*v.FluxQrS) + (v.K4*v.IQsS);                   \
                                                                                 \
 /* Conventional PI controller section */                                        \
     v.Error =  v.PsiDsS - v.FluxDsS;                                            \
@@ -174,11 +197,11 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
 /* Compute the estimated stator flux based on the integral of back emf*/        \
     v.OldEmf = v.EmfDsS;                                                        \
     v.EmfDsS = v.UDsS - v.UCompDsS - (v.K5*v.IDsS);                       \
-    v.PsiDsS = v.PsiDsS + (0.5*(v.K6*(v.EmfDsS + v.OldEmf)));          \
+    v.PsiDsS = v.PsiDsS + 0.5*((v.K6*(v.EmfDsS + v.OldEmf)));          \
                                                                                 \
     v.OldEmf = v.EmfQsS;                                                        \
     v.EmfQsS = v.UQsS - v.UCompQsS - (v.K5*v.IQsS);                       \
-    v.PsiQsS = v.PsiQsS + (0.5*(v.K6*(v.EmfQsS + v.OldEmf)));          \
+    v.PsiQsS = v.PsiQsS + 0.5*((v.K6*(v.EmfQsS + v.OldEmf)));          \
                                                                                 \
 /* Estimate the rotor flux based on stator flux from the integral of back emf*/ \
                                                                                 \
@@ -186,9 +209,15 @@ typedef struct {  float32_t  ThetaFlux;       // Output: Rotor flux angle
     v.PsiQrS = (v.K7*v.PsiQsS) - (v.K8*v.IQsS);                     \
                                                                                 \
 /* Compute the rotor flux angle*/                                               \
-    v.ThetaFlux = ((atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)) >= 0.0 ? (atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)):1.0 + (atan2(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)))
+    v.tmp = ( atan2f(v.PsiQrS,v.PsiDrS) ) ;                                     \
+    if (v.tmp >=0.0)                                                            \
+        v.ThetaFlux = v.tmp;                                                    \
+    else                                                                        \
+        v.ThetaFlux = v.tmp + 6.283185307;
+    //((atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)) >= 0.0 ? (atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)):1.0 + (atan2f(v.PsiQrS,v.PsiDrS)*(1.0/6.283185307)));
 
 #endif // __ACI_FE_H__
+
 
 
 /* =================================================================================
@@ -291,7 +320,7 @@ Default initalizer for the ACISE object.
                           0,            \
                           (0.1),     \
                           0,            \
-                          3600,         \
+                          1500,         \
                           0,            \
                           0,            \
                           0,            \
@@ -314,7 +343,7 @@ Default initalizer for the ACISE object.
     v.WSlip= (v.WSlip/v.SquaredPsi);                                      \
                                                                                 \
 /*  Synchronous speed computation   */                                          \
-    if ((v.ThetaFlux < DIFF_MAX_LIMIT)&(v.ThetaFlux > DIFF_MIN_LIMIT))          \
+    if ((v.ThetaFlux < 0.8)&(v.ThetaFlux > 0.2))          \
 /*  Q21 = Q21*(GLOBAL_Q-GLOBAL_Q)*/                                             \
           v.WSyn = (v.K2*(v.ThetaFlux - v.OldThetaFlux));                 \
     else  v.WSyn = v.WPsi;                                                      \
@@ -324,20 +353,24 @@ Default initalizer for the ACISE object.
                                                                                 \
 /* Q21 = Q21 - GLOBAL_Q */                                                      \
     v.OldThetaFlux = v.ThetaFlux;                                               \
-    v.WrHat = v.WPsi - (v.WSlip);                                      \
+    v.WrHat = ( v.WPsi - (v.WSlip) ) ;                                      \
+                                                                                \
                                                                                 \
 /* Limit the estimated speed between -1 and 1 per-unit */                       \
-    v.WrHat= (v.WrHat>float32_t(1)) ? float32_t(1) : ((v.WrHat<float32_t(-1))? float32_t(-1) : v.WrHat )  \
-                                                                                \
-/* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q */                               \
-    v.WrHatRpm = (v.BaseRpm*v.WrHat);
-
+   if (v.WrHat>1.0)    \
+            v.WrHat=1.0;    \
+   if (v.WrHat< -1.0)  \
+            v.WrHat = -1.0; \
+                                                                              \
+    /* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q */                               \
+   v.WrHatRpm = (v.BaseRpm*v.WrHat);
 #endif // __ACI_SE_H__
 
 
-/* =================================================================================
-File name:       ACI_SE_CONST.H
-===================================================================================*/
+///* =================================================================================
+//File name:       ACI_SE_CONST.H
+//===================================================================================*/
+
 #ifndef __ACI_SE_CONST_H__
 #define __ACI_SE_CONST_H__
 
@@ -870,7 +903,7 @@ Default initalizer for the SPEED_MEAS_CAP object.
                                     0, \
                                     0, \
                                     0, \
-                                   1800, \
+                                   1500, \
                                     0, \
                                   }
 
@@ -959,3 +992,195 @@ Default initalizer for the SPEED_MEAS_QEP object.
     v.SpeedRpm = (v.BaseRpm*v.Speed);
 
 #endif // __SPEED_FR_H__
+
+
+//***** Additional Micro added as below for PMSM on a top of above micro required for IM ***//
+
+       /* =================================================================================
+       File name:       SMOPOS.H
+       ==================================================================================*/
+       #ifndef __SMOPOS_H__
+       #define __SMOPOS_H__
+
+
+       typedef struct {  float32_t  Valpha;      // Input: Stationary alfa-axis stator voltage
+                         float32_t  Ealpha;      // Variable: Stationary alfa-axis back EMF
+                         float32_t  Zalpha;      // Output: Stationary alfa-axis sliding control
+                         float32_t  Gsmopos;     // Parameter: Motor dependent control gain
+                         float32_t  EstIalpha;   // Variable: Estimated stationary alfa-axis stator current
+                         float32_t  Fsmopos;     // Parameter: Motor dependent plant matrix
+                         float32_t  Vbeta;       // Input: Stationary beta-axis stator voltage
+                         float32_t  Ebeta;       // Variable: Stationary beta-axis back EMF
+                         float32_t  Zbeta;       // Output: Stationary beta-axis sliding control
+                         float32_t  EstIbeta;    // Variable: Estimated stationary beta-axis stator current
+                         float32_t  Ialpha;      // Input: Stationary alfa-axis stator current
+                         float32_t  IalphaError; // Variable: Stationary alfa-axis current error
+                         float32_t  Kslide;      // Parameter: Sliding control gain
+                         float32_t  Ibeta;       // Input: Stationary beta-axis stator current
+                         float32_t  IbetaError;  // Variable: Stationary beta-axis current error
+                         float32_t  Kslf;        // Parameter: Sliding control filter gain
+                         float32_t  Theta;       // Output: Compensated rotor angle
+                         float32_t  E0;          // Parameter: 0.5
+                         float32_t  tmp;         //
+                        } SMOPOS;
+
+       /*-----------------------------------------------------------------------------
+       Default initalizer for the SMOPOS object.
+       -----------------------------------------------------------------------------*/
+       #define SMOPOS_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0, \
+                                  0,0,0,0,0,0,float32_t(0.5),0   \
+                               }
+
+       /*------------------------------------------------------------------------------
+       Prototypes for the functions in SMOPOS.C
+       ------------------------------------------------------------------------------*/
+
+       #define SMO_MACRO(v)                                                                                    \
+                                                                                                               \
+           /*  Sliding mode current observer   */                                                              \
+           v.EstIalpha = (v.Fsmopos*v.EstIalpha) + (v.Gsmopos*(v.Valpha-v.Ealpha-v.Zalpha));       \
+           v.EstIbeta  = (v.Fsmopos*v.EstIbeta)  + (v.Gsmopos*(v.Vbeta -v.Ebeta -v.Zbeta ));       \
+                                                                                                               \
+           /*  Current errors  */                                                                              \
+           v.IalphaError = v.EstIalpha - v.Ialpha;                                                             \
+           v.IbetaError  = v.EstIbeta  - v.Ibeta;                                                              \
+                                                                                                               \
+           /*  Sliding control calculator  */                                                                  \
+           /* v.Zalpha=v.IalphaError*v.Kslide/v.E0) where E0=0.5 here*/                                        \
+           v.Zalpha = (_IQsat(v.IalphaError,v.E0,-v.E0)* 2*(v.Kslide));                              \
+           v.Zbeta  = (_IQsat(v.IbetaError ,v.E0,-v.E0)* 2*(v.Kslide));                              \
+                                                                                                               \
+           /*  Sliding control filter -> back EMF calculator   */                                              \
+           v.Ealpha = v.Ealpha + (v.Kslf*(v.Zalpha-v.Ealpha));                                           \
+           v.Ebeta  = v.Ebeta  + (v.Kslf*(v.Zbeta -v.Ebeta));                                            \
+                                                                                                               \
+           /*  Rotor angle calculator -> Theta = atan(-Ealpha,Ebeta)   */                                      \
+           /*v.Theta = _IQatan2PU(-v.Ealpha,v.Ebeta); */                                                   \
+           /* Compute the rotor flux angle*/                                               \
+           v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) ) ;                                     \
+                            if (v.tmp >=0.0)                                                            \
+                                v.ThetaFlux = v.tmp;                                                    \
+                            else                                                                        \
+                                v.ThetaFlux = v.tmp + 6.283185307;
+       #endif
+
+
+
+           /* Extended version of sliding control calculator
+           if (_IQabs(v.IalphaError) < E0)
+              v.Zalpha = _IQmpy(v.Kslide,_IQdiv(v.IalphaError,E0));
+           else if (v.IalphaError >= E0)
+              v.Zalpha = v.Kslide;
+           else if (v.IalphaError <= -E0)
+              v.Zalpha = -v.Kslide;
+
+           if (_IQabs(v.IbetaError) < E0)
+              v.Zbeta = _IQmpy(v.Kslide,_IQdiv(v.IbetaError,E0));
+           else if (v.IbetaError >= E0)
+              v.Zbeta = v.Kslide;
+           else if (v.IbetaError <= -E0)
+              v.Zbeta = -v.Kslide;
+       */
+
+
+
+                        /* =================================================================================
+                        File name:       SMOPOS_CONST.H
+                        ===================================================================================*/
+                        #ifndef __SMOPOS_CONST_H__
+                        #define __SMOPOS_CONST_H__
+
+                        typedef struct  { float32_t  Rs;              // Input: Stator resistance (ohm)
+                                          float32_t  Ls;              // Input: Stator inductance (H)
+                                          float32_t  Ib;              // Input: Base phase current (amp)
+                                          float32_t  Vb;              // Input: Base phase voltage (volt)
+                                          float32_t  Ts;              // Input: Sampling period in sec
+                                          float32_t  Fsmopos;         // Output: constant using in observed current calculation
+                                          float32_t  Gsmopos;         // Output: constant using in observed current calculation
+
+                                        } SMOPOS_CONST;
+
+                        /*-----------------------------------------------------------------------------
+                        Default initalizer for the SMOPOS_CONST object.
+                        -----------------------------------------------------------------------------*/
+                        #define SMOPOS_CONST_DEFAULTS {0,0,0,0,0,0,0, \
+                                                    }
+
+                        /*------------------------------------------------------------------------------
+                        Prototypes for the functions in SMOPOS_CONST.C
+                        ------------------------------------------------------------------------------*/
+
+                        #define SMO_CONST_MACRO(v)                              \
+                                                                                \
+                            v.Fsmopos = exp((-v.Rs/v.Ls)*(v.Ts));               \
+                            v.Gsmopos = (v.Vb/v.Ib)*(1/v.Rs)*(1-v.Fsmopos);
+
+                        #endif
+
+
+
+                                        /* =================================================================================
+                                        File name:        SPEED_EST.H
+                                        ===================================================================================*/
+
+
+                                        #ifndef __SPEED_EST_H__
+                                        #define __SPEED_EST_H__
+
+                                        typedef struct {
+                                               float32_t EstimatedTheta;      // Input: Electrical angle (pu)
+                                               float32_t OldEstimatedTheta;   // History: Electrical angle at previous step (pu)
+                                               float32_t EstimatedSpeed;      // Output: Estimated speed in per-unit  (pu)
+                                               Uint32 BaseRpm;          // Parameter: Base speed in rpm (Q0) - independently with global Q
+                                               float32_t K1;                // Parameter: Constant for differentiator (Q21) - independently with global Q
+                                               float32_t K2;                  // Parameter: Constant for low-pass filter (pu)
+                                               float32_t K3;                  // Parameter: Constant for low-pass filter (pu)
+                                               int32 EstimatedSpeedRpm; // Output : Estimated speed in rpm  (Q0) - independently with global Q
+                                               float32_t Temp;                // Variable : Temp variable
+                                               } SPEED_ESTIMATION;      // Data type created
+
+
+                                        /*-----------------------------------------------------------------------------
+                                        Default initalizer for the SPEED_ESTIMATION object.
+                                        -----------------------------------------------------------------------------*/
+                                        #define SPEED_ESTIMATION_DEFAULTS   { 0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                              0, \
+                                                                            }
+
+                                        #define SE_DIFF_MAX_LIMIT   (0.85)
+                                        #define SE_DIFF_MIN_LIMIT   (0.15)
+                                        /*------------------------------------------------------------------------------
+                                         SPEED_EST Macro Definition
+                                        ------------------------------------------------------------------------------*/
+
+
+                                        #define SE_MACRO(v)                                                                 \
+                                        if ((v.EstimatedTheta < SE_DIFF_MAX_LIMIT)&(v.EstimatedTheta > SE_DIFF_MIN_LIMIT))  \
+                                            v.Temp = (v.K1*(v.EstimatedTheta - v.OldEstimatedTheta));                 \
+                                        /*  Q21 = Q21*(GLOBAL_Q-GLOBAL_Q) */                                                \
+                                        else v.Temp = (v.EstimatedSpeed);                                          \
+                                                                                                                            \
+                                        /* Low-pass filter */                                                               \
+                                        /* Q21 = GLOBAL_Q*Q21 + GLOBAL_Q*Q21 */                                             \
+                                            v.Temp = (v.K2*(v.EstimatedSpeed))+(v.K3*v.Temp);          \
+                                                                                                                            \
+                                        /* Saturate the output */                                                           \
+                                            v.Temp=_IQsat(v.Temp,(1),(-1));                                       \
+                                            v.EstimatedSpeed = (v.Temp);                                           \
+                                                                                                                            \
+                                        /* Update the electrical angle */                                                   \
+                                            v.OldEstimatedTheta = v.EstimatedTheta;                                         \
+                                                                                                                            \
+                                        /* Change motor speed from pu value to rpm value (GLOBAL_Q -> Q0)*/                 \
+                                        /* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q*/                                    \
+                                            v.EstimatedSpeedRpm = (v.BaseRpm*v.EstimatedSpeed);
+                                        #endif // __SPEED_EST_H__
+
+

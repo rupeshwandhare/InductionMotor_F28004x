@@ -711,59 +711,6 @@ void initGlobalVariable(void)
     vpv2_control_feedforward = 0;
     vpv2_control_controlout = 0;
 
-/*
-    update_const_k1_PIiL1 = 31.44;
-    update_const_k2_PIiL1 = 31.39;
-    update_const_k1_PIiL2 = 31.44;
-    update_const_k2_PIiL2 = 31.39;
-    update_const_upper_limit_il1_PIout = 100;
-    update_const_lower_limit_il1_PIout = -100;
-    update_const_upper_limit_il2_PIout = 100;
-    update_const_lower_limit_il2_PIout = -100;
-    update_const_upper_limit_il1_controlout = 0.7;
-    update_const_lower_limit_il1_controlout = 0.01;
-    update_const_upper_limit_il2_controlout = 0.7;
-    update_const_lower_limit_il2_controlout = 0.01;
-    update_const_k1_PIvpv1 = 0.2364;
-    update_const_k2_PIvpv1 = 0.2349;
-    update_const_k1_PIvpv2 = 0.2364;
-    update_const_k2_PIvpv2 = 0.2349;
-    update_const_upper_limit_vpv1_PIout = 25;
-    update_const_lower_limit_vpv1_PIout = -25;
-    update_const_upper_limit_vpv2_PIout = 25;
-    update_const_lower_limit_vpv2_PIout = -25;
-    update_const_upper_limit_vpv1_controlout = 25;
-    update_const_lower_limit_vpv1_controlout = -25;
-    update_const_upper_limit_vpv2_controlout = 25;
-    update_const_lower_limit_vpv2_controlout = -25;
-    update_const_ipv1_ref_isc = 0;
-    update_const_vpv1_ref_vsc = 0;
-    update_const_vpv1_ref_voc = 0;
-    update_const_ipv1_ref_imp = 0;
-    update_const_slop1_vpv1_ref_gen = 0;
-    update_const_constant1_vpv1_ref_gen = 0;
-    update_const_slop2_vpv1_ref_gen = 0;
-    update_const_constant2_vpv1_ref_gen = 0;
-    update_const_ipv2_ref_isc = 0;
-    update_const_vpv2_ref_vsc = 0;
-    update_const_vpv2_ref_voc = 0;
-    update_const_ipv2_ref_imp = 0;
-    update_const_slop1_vpv2_ref_gen = 0;
-    update_const_constant1_vpv2_ref_gen = 0;
-    update_const_slop2_vpv2_ref_gen = 0;
-    update_const_constant2_vpv2_ref_gen = 0;
-    update_const_slew_rate1 = 0.00002;
-    update_const_vpv1_threshold_slew_to_vpvcontrol = 112;
-    update_const_duty1_threshold_slew_to_vpvcontrol = 0.2;
-    update_const_slew_rate2 = 0.00002;
-    update_const_vpv2_threshold_slew_to_vpvcontrol = 112;
-    update_const_duty2_threshold_slew_to_vpvcontrol = 0.2;
-    update_const_vdc_threshold_charging_to_idle = 500;
-    update_const_deacceleration_rate = 0.00002;
-    update_const_upper_duty_threshold = 0;
-*/
-
-
     update_const_vpv_overvoltage_threshold = 400.0;
 
     sensor_v_pv1 = 0;
@@ -810,35 +757,7 @@ void initGlobalVariable(void)
     count_charging4 = 0;
 
     common_flag_init_GlobalVariable = 0;
- 
-/*
-    Select_PVcurve1 = 2;
-    Io1= 0.0001; //FACTOR 0.000001 IS USED IN FORMULA 9.96*10^(-11);
-    ILight1=9.04;
-    Rs1 = 0.5;//0.219;
-    vpv_ref1=0;
-    ipv1=0;
-    Np1=1;
-    Ns1=8;
-    BetaV1 = 0.40;
-    Temp1 = 30;//50;
-    
-    Select_PVcurve2 = 0;
-    Io2= 0.0001; //FACTOR 0.000001 IS USED IN FORMULA 9.96*10^(-11);
-    ILight2=9.04;
-    Rs2 = 0.5;//0.219;
-    vpv_ref2=0;
-    ipv2=0;
-    Np2=1;
-    Ns2=8;
-    BetaV2 = 0.40;
-    Temp2 = 30;//50;
-    vpv_ref1_fltr_prev = 0;
-    vpv_ref2_fltr_prev = 0;
 
-    k1_Fltr_vpv1n2 = 0.99373647;
-    k2_Fltr_vpv1n2 = 0.00313176265;
-*/
 }
 
 
@@ -893,16 +812,19 @@ void VIENNA_calibrateOffset()
 
 */
 
+/*
                 VIENNA_vDCMeasOffset_pu = VIENNA_k1 * (VIENNA_vDCMeasOffset_pu) +
                         VIENNA_k2 * (VIENNA_VDC_FB_1 + VIENNA_VDC_FB_2 + VIENNA_VDC_FB_3 + VIENNA_VDC_FB_4) * 0.25 * ADC_VDC_GAIN;
+*/
 
 
             }
 /*
             VIENNA_vPV1MeasOffset_pu = 0.0;
             VIENNA_vPV2MeasOffset_pu = 0.0;
-            VIENNA_vDCMeasOffset_pu = 0.0;
 */
+            VIENNA_vDCMeasOffset_pu = -0.028;//0.0;
+
             VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
             VIENNA_offsetCalCounter++;
         }

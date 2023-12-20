@@ -71,7 +71,7 @@ extern "C" {
 
 #define PWMSYSCLOCK_FREQ    (float32_t)(100 * 1000000)
 
-#define INV_DEADBAND_US              ((float32_t)4.0)           //This statement is checked, it generates delay of xx usec
+#define INV_DEADBAND_US              ((float32_t)0.50)           //This statement is checked, it generates delay of xx usec
 #define INV_DEADBAND_PWM_COUNT       (int16_t)((float32_t)                \
                                           INV_DEADBAND_US *               \
                                           (float32_t)PWMSYSCLOCK_FREQ *   \

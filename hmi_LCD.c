@@ -17,8 +17,13 @@ void init_critical_gpio(void)
     //======
     EALLOW;
     //PowerRelay
-    GpioCtrlRegs.GPAMUX1.bit.GPIO14 = 0;
-    GpioCtrlRegs.GPADIR.bit.GPIO14 = 1;
+//    GpioCtrlRegs.GPAMUX1.bit.GPIO14 = 0;
+//    GpioCtrlRegs.GPADIR.bit.GPIO14 = 1;
+
+
+    GpioCtrlRegs.GPBMUX1.bit.GPIO40 = 0;
+    GpioCtrlRegs.GPBDIR.bit.GPIO40 = 1;
+
 
     //DisablePWM1 on GPIO22
     GpioCtrlRegs.GPAAMSEL.bit.GPIO22 = 0;//For GPIO22 and GPIO23 we need to manualy config them from analog to digital mode
@@ -50,6 +55,13 @@ void init_hmi_gpio(void)
     //LEDRed
     GpioCtrlRegs.GPAMUX1.bit.GPIO15 = 0;
     GpioCtrlRegs.GPADIR.bit.GPIO15 = 1;
+//
+/////////////////////////////////////////////////
+//    //LEDRed 23
+//    GpioCtrlRegs.GPAMUX2.bit.GPIO23 = 0;
+//    GpioCtrlRegs.GPADIR.bit.GPIO23 = 1;
+/////////////////////////////////////////////////
+
     //SCI Boot capacitor
     GpioCtrlRegs.GPAMUX2.bit.GPIO17 = 0;
     GpioCtrlRegs.GPADIR.bit.GPIO17 = 1;

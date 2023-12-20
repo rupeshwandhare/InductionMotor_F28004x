@@ -25,6 +25,8 @@
 
 #include <hmi.h>
 
+
+
 extern struct LCD_VARS lcd;
 extern struct COMMON_FLAG common_flag;
 extern struct COMMAND command;
@@ -69,6 +71,8 @@ void init_motor(void);
 void MotorISR(void);
 void MotorOperation(void);
 
+Uint16 ISRcount=0;
+
 void main(void)
 {
     //
@@ -98,11 +102,6 @@ void main(void)
 //    VIENNA_HAL_setupADC();
     setupADC(); //Map adc channels and Activate adc-A,B,C modules and
 
-    #if VIENNA_SDFM_SENSING == 1
-        VIENNA_HAL_setupSDFM(VIENNA_PFC3PH_PWM_PERIOD, VIENNA_PWM_CLK_IN_SDFM_OSR, VIENNA_SD_CLK_COUNT, VIENNA_SDFM_OSR);
-    #endif
-
-
 //    VIENNA_globalVariablesInit();
     initGlobalVariable();
     //
@@ -113,45 +112,36 @@ void main(void)
     //setup PMW trigger for the ADC conversions; Rupesh's Notebook/Software2/ADC speed and EPWM and comp trip in c2000 tms320f280049 vienna rectifier
     VIENNA_HAL_setupTriggerForADC(VIENNA_HIGH_FREQ_PWM1_BASE);   //This trigger is spread near the peak of TB counter in sync up and down mode, so that adc reads value near middle of current rise
 
-    #if VIENNA_SDFM_SENSING == 1
-        VIENNA_HAL_enablePWMInterruptGeneration( VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE, (float32_t)VIENNA_PWM_CLK_IN_SDFM_OSR * (float32_t)1.5 );
-    #else
-        VIENNA_HAL_enablePWMInterruptGeneration( VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE, EPWM_getCounterCompareValue(VIENNA_HIGH_FREQ_PWM1_BASE, EPWM_COUNTER_COMPARE_B) );
-    #endif
+    //Interrupt source selection
+    VIENNA_HAL_enablePWMInterruptGeneration( VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE, EPWM_getCounterCompareValue(VIENNA_HIGH_FREQ_PWM1_BASE, EPWM_COUNTER_COMPARE_B) );
+
 
     //
     // Offset Calibration Routine
-    // #if VIENNA_SDFM_SENSING == 0
-    //  VIENNA_calibrateOffset();
-    // #endif
-    //
     #if SENSING_OPTION == ADC_BASED_SENSING
         VIENNA_calibrateOffset();  //calibration using EPWM flags before ISR-EPWM trigger
     #endif
 
     //
     // setup protection and trips for the board, using comparators over the ADC channels
-    //
+/*
     VIENNA_HAL_setupBoardProtection(VIENNA_HIGH_FREQ_PWM1_BASE,
                                     VIENNA_HIGH_FREQ_PWM2_BASE,
                                     VIENNA_HIGH_FREQ_PWM3_BASE,
                                     VIENNA_I_TRIP_LIMIT_AMPS, VIENNA_I_MAX_SENSE_AMPS);
+*/
 
     InitializeSCI(); //For bluetooth or wifi or Touchpad
 
     VIENNA_HAL_setPinsAsPWM();  //Set GPIO as PWM pins, safe to setup PWM pins, as ADC and comparator based trips are active now, PWM were tripped low in the previous routine
 
+    setup_DAC_PWM();
+
     //
     // ISR Mapping
-    //
     VIENNA_HAL_setupInterrupt();
 
-    //
-    // Setup SFRA
-//    VIENNA_setupSFRA();
-
-
-    CONTROL_STATE = VDC_CHARGING;  //Initialize DC bus charging state
+    CONTROL_STATE = VDC_CHARGING;  //Initialize DC bus charging state only power cycle
 
     init_motor();
 
@@ -186,19 +176,18 @@ void main(void)
     interrupt void ISR1(void)
     {
         MotorISR();
-//        ControlCode_PVEmu();
-        //VIENNA_pfcControlCode();
+
         VIENNA_HAL_clearInterrupt(VIENNA_C28x_ISR1_INTERRUPT_PIE_GROUP_NO);
+        VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
     }// control ISR Ends Here
 #endif
 
 //
 // 10Khz ISR Code
-//
 #if VIENNA_INSTRUMENTATION_ISR_RUNNING_ON == C28x_CORE
     interrupt void ISR2(void)
     {
-        protections();
+//        protections();
 //        VIENNA_instrumentationCode();
      }// 10Khz ISR Ends Here
 #endif
@@ -272,12 +261,13 @@ void A1(void)   //2*50us=100us (10kHz)
 void A2(void)    //2*50us=100us (10kHz)
 {
 
-    sw_debug();
-//    protections4();
-    //
+//    sw_debug();
+
     //the next time CpuTimer0 'counter' reaches Period value go to A1
     //
     A_Task_Ptr = &A1;
+
+
 }
 
 //
@@ -291,8 +281,6 @@ void B1(void)    //3*500usec
 
     MotorOperation();
 
-//    VIENNA_updateBoardStatus();
-
     //
     //the next time CpuTimer1 'counter' reaches Period value go to B2
     //
@@ -301,6 +289,8 @@ void B1(void)    //3*500usec
 
 void B2(void)   //3*500usec
 {
+
+    hw_debug();
 
     //    VIENNA_HAL_toggleLED();
 
@@ -320,8 +310,11 @@ void B3(void)   //3*500usec
     if (i>667) {    //for 1sec
         i=0;
 
+        /////////////////////////
 
-        if(LEDRed) LEDRed=OFF;  //Turn off the the LED triggered by IR sensor
+//        if(LEDRed) LEDRed=OFF;  //Turn off the the LED triggered by IR sensor
+
+        /////////////////////////
     }
 
     j++;

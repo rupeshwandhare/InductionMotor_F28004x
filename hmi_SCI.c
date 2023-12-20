@@ -42,14 +42,22 @@ typedef union _Float{
 
 Float receivedValue;
 
+float test=0;
+
 unsigned char detect_parameter_transfer;
 unsigned char byte[4];
+extern float32_t VdTesting;
 
 
 //-------
 
 void InitializeSCI(void)
 {
+    //// LED Init
+    GPIO_setPadConfig(23, GPIO_PIN_TYPE_STD);
+    GPIO_setDirectionMode(23, GPIO_DIR_MODE_OUT);
+
+
     // GPIO28 is the SCI Rx pin.
     GPIO_setMasterCore(DEVICE_GPIO_PIN_SCIRXDA, GPIO_CORE_CPU1);
     GPIO_setPinConfig(DEVICE_GPIO_CFG_SCIRXDA);
@@ -102,7 +110,7 @@ void InitializeSCI(void)
      SCI_lockAutobaud(SCIA_BASE);
  #endif
 
-     Float receivedValue;
+//     Float receivedValue;
 
      //
      // Send starting message.
@@ -183,7 +191,11 @@ float *Ptr_recieve_var;
 float speed_ref=0;
 
 Uint16 CommandOnOff = 0;
-
+extern Uint16 select_varDAC;
+extern float32_t SpeedRef;
+extern float32_t VqTesting;
+extern float32_t IdRef;
+extern float32_t IqRef;
 
 void Process_SCI_Received_Data();
 
@@ -206,61 +218,6 @@ sciaRxISR(void)
     received_char[5] = SCI_readCharBlockingFIFO(SCIA_BASE);
 
     Process_SCI_Received_Data(&receivedValue);
-
-/*
-    if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
-        ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
-    }
-    else if (received_char[0]==0x02) {  //command 0x02 for upscreen; received_char[0] holds command
-        ir.Last_Switch=UP_Key;   //To synchronize with IR based UPKEY button operation
-    }
-    else if (received_char[0]==0x03) {  //command 0x03 for downscreen; received_char[0] holds command
-        ir.Last_Switch=DOWN_Key;  //To synchronize with IR based Downkey button operation
-    }
-    else if (received_char[0]==0x04) {  //command 0x04 for password match for SCIBT to change variables; received_char[0] holds command
-        if ( received_char[1]==0x62 && received_char[2]==0x84  )    //match these passwords received from app to enable constants to change.
-            True_password_SCIBT = 1;
-        else
-            True_password_SCIBT = 0;
-    }
-    else if (received_char[0]==0x06) {  //command 0x06 for changing constants and loading to flash; received_char[0] holds command
-
-        if (!True_password_SCIBT) return; //Provide protection lock
-
-        lcd.ID_Const = received_char[5]; //received_char[5] folds ID number
-        pickup_constant();      //This can also be used for sofware-POT operation. Good thing is that POT last value will store in flash after Off command
-
-        // From a chars array (fArray) to a float variable (f2):
-        __byte((int *)&received_float,0) = received_char[4];
-        __byte((int *)&received_float,1) = received_char[3];
-        __byte((int *)&received_float,2) = received_char[2];
-        __byte((int *)&received_float,3) = received_char[1];
-
-        *Ptr_Constant = received_float;
-
-        SCIBT_Change_Constants = 1;
-    }
-    else if (received_char[0]==0x07) {  //command 0x07 for SCI boot loading capacitor charge; received_char[0] holds command
-//        if (!True_password_SCIBT) return; //Provide protection lock
-
-        SCIBootCap = ENABLE;
-    }
-*/
-
-
-/*
-    //
-    // Echo back the two characters.
-    //Rupesh: BELOW CODE WORKS PERFECTLY FOR 16 CHAR OR LESS AND NOT FOR 17 AND MORE
-    msg = "You sent:\0";
-    SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, 10);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[0]);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[1]);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[2]);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[3]);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[4]);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, received_char[5]);
-*/
 
     //
     // Clear the SCI RXFF interrupt and acknowledge the PIE interrupt.
@@ -287,9 +244,10 @@ void floatToByteArray(Float * fvalue, unsigned char * byteArr, unsigned char ind
 //char transmit_char1[6];
 Uint16 ID_Vars=0;
 volatile float32_t *Ptr_Vars;
-#define NosOfVars 30
+#define NosOfVars 8
 float32_t temp_vars;
 Uint16 Enable_Vars_trasmit_SCIBT=0;
+Uint16 rec_byte[6];
 void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop //Transferring 6*8 bits+2bytes gap= 64bits in one run: minimum time=64/9600=6.6msec
 {
     if (!Enable_Vars_trasmit_SCIBT) { //Enable variable transmit over SCI along with their IDs and ack
@@ -297,9 +255,10 @@ void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop 
     }
 
     // Send one variable in one run and increment for next variable.
-    if (ID_Vars<NosOfVars) {    //increment and rotation for ID_Vars
+    if (ID_Vars>NosOfVars) {    //increment and rotation for ID_Vars
         ID_Vars = 0;
     }
+
     ID_Vars++;
     index_var = ID_Vars;
     pickup_vars();
@@ -307,39 +266,65 @@ void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop 
     transmitValue->f = *Ptr_Vars;
 
     //converts Float variable 'receivedValue' to byte array
-    floatToByteArray(&transmitValue, byteArr, index_var);
+//    floatToByteArray(&transmitValue, byteArr, index_var);
 
-/*
+
     // Send bytes; From a float variable to a chars array and append with IDs, commands, etc:
-    SCI_writeCharBlockingFIFO(SCIA_BASE, (char) ID_Vars);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,0));
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,1));
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,2));
+
+    // Send bytes; From a float variable to a chars array and append with IDs, commands, etc:
+
+    SCI_writeCharBlockingFIFO(SCIA_BASE, (char) 0x08);
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,3));
-    SCI_writeCharBlockingFIFO(SCIA_BASE, (char) 0x12);      //It may use for acknowledge signal
-*/
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,2));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,1));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,0));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, (char) ID_Vars);      //It may use for acknowledge signal
+
+
+
+
+
 
 }
 
 // read floats through SCI
 // reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
 void Process_SCI_Received_Data(Float * receivedValue){
-//    int i = 0;
 
-//    uint16_t rxStatus = 0U;
-
-
-    if (received_char[0]==50) {  //command 0x01 for On and Off; received_char[0] holds command
-        if (command_OnOff) command_OnOff=0;
-        else command_OnOff=1;
-
-        ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
+    if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
+//        if (command_OnOff) command_OnOff=0;
+//        else command_OnOff=1;
+        command_OnOff=1;
+        test=1;
+        SpeedRef =0.3;
+        GPIO_writePin(23, 0);
+        LEDRed=1;
+//        GpioDataRegs.GPASET.bit.GPIO15=1;
+        //        ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }
-    else if (received_char[0]==51) {  //command 0x02 for upscreen; received_char[0] holds command
+
+/////////////////////////////////////////////////////////
+    else if (received_char[0]==0x11) {  //command 0x11 for turn off
+        command_OnOff=0;
+        test=2;
+        GPIO_writePin(23, 1);
+        LEDRed=0;
+       }
+/////////////////////////////////////////////////////////
+
+    else if (received_char[0]==0x02) {  //command 0x02 for upscreen; received_char[0] holds command
         ir.Last_Switch=UP_Key;   //To synchronize with IR based UPKEY button operation
+        SpeedRef = SpeedRef + 0.025;
     }
-    else if (received_char[0]==52) {  //command 0x03 for downscreen; received_char[0] holds command
+    else if (received_char[0]==0x03) {  //command 0x03 for downscreen; received_char[0] holds command
         ir.Last_Switch=DOWN_Key;  //To synchronize with IR based Downkey button operation
+        SpeedRef = SpeedRef - 0.025;
+    }
+    else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
+        IdRef = IdRef + 0.025;
+    }
+    else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
+        IdRef = IdRef - 0.025;
     }
     else if (received_char[0]==0x05) {  //command 0x05 for password match for SCIBT to change variables; received_char[0] holds command
         if ( received_char[1]==0x62 && received_char[2]==0x84  )    //match these passwords received from app to enable constants to change.
@@ -358,14 +343,14 @@ void Process_SCI_Received_Data(Float * receivedValue){
         byte[2] = received_char[3];
         byte[3] = received_char[4];
 
-//        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
+        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 //        receivedValue->bytes = ((unsigned long)byte[0]<<24 | (unsigned long)byte[1] << 16 | (unsigned long)byte[2] << 8 | (unsigned long)byte[3]);
 
-//        *Ptr_recieve_var = receivedValue->f;
+        *Ptr_recieve_var = receivedValue->f;
 
-        speed_ref = (float)received_char[1];
-        if (speed_ref < -1.0) speed_ref = -1.0;
-        if (speed_ref > 1.0) speed_ref = 1.0;
+//        speed_ref = (float)received_char[1];
+//        if (speed_ref < -1.0) speed_ref = -1.0;
+//        if (speed_ref > 1.0) speed_ref = 1.0;
 
         SCIBT_Change_Constants = 1;
 
@@ -373,16 +358,16 @@ void Process_SCI_Received_Data(Float * receivedValue){
 
 
 // for testing only
-        if (index_parameter==0x11) {
-            //use new value of parameter=receivedValue->f with index as above
-            //transmitValue=;
-
-            //pass by reference- s changes the value in place
-            // do some calculations
-            receivedValue->f = receivedValue->f*10.0;
-            //calculation1(&receivedValue);
-            index_var = 0x01;
-        }
+//        if (index_parameter==0x11) {
+//            //use new value of parameter=receivedValue->f with index as above
+//            //transmitValue=;
+//
+//            //pass by reference- s changes the value in place
+//            // do some calculations
+//            receivedValue->f = receivedValue->f*10.0;
+//            //calculation1(&receivedValue);
+//            index_var = 0x01;
+//        }
 
         if (index_parameter==0x12) {
             //use new value of parameter=receivedValue->f with index as above
@@ -453,6 +438,10 @@ void Process_SCI_Received_Data(Float * receivedValue){
 
 
     }
+    else if (received_char[0]==0x06) {
+        select_varDAC++;
+        if (select_varDAC>3) select_varDAC=1;
+    }
     else if (received_char[0]==0x07) {  //command 0x07 for SCI boot loading capacitor charge; received_char[0] holds command
 //        if (!True_password_SCIBT) return; //Provide protection lock
 
@@ -468,7 +457,7 @@ void Process_SCI_Received_Data(Float * receivedValue){
 
 
 
-//For assigning picking up constant to change THERE IS BETTER WAY (SHORT CODE) IF USED STRUCTURE
+//For assigning picking up variables for transmit (monitoring) THERE IS BETTER WAY (SHORT CODE) IF USED STRUCTURE
 volatile float32_t dummy2;
 void pickup_vars(void)
 {
@@ -480,7 +469,7 @@ void pickup_vars(void)
         Ptr_Vars = &VIENNA_vDCMeas_pu;
         break;
     case 2:
-        Ptr_Vars = &vpv1_control_ref;
+        Ptr_Vars = &VIENNA_iL1Meas_pu;
         break;
     case 3:
         Ptr_Vars = &sensor_v_pv1_fltr;
