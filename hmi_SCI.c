@@ -353,33 +353,6 @@ void Process_SCI_Received_Data(Float * receivedValue){
     }
     else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
         IdRef = IdRef - 0.0125;
-<<<<<<< HEAD
-    }
-    else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef + 0.0125;
-    }
-    else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef - 0.0125;
-    }
-    else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef + 0.0125;
-    }
-    else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef - 0.0125;
-    }
-    else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef + 0.0125;
-    }
-    else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef - 0.0125;
-    }
-    else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef + 0.0125;
-    }
-    else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef - 0.0125;
-=======
->>>>>>> branch 'master' of https://github.com/rupeshwandhare/InductionMotor_F28004x.git
     }
     else if (received_char[0]==0x05) {  //command 0x05 for password match for SCIBT to change variables; received_char[0] holds command
         if ( received_char[1]==0x62 && received_char[2]==0x84  )    //match these passwords received from app to enable constants to change.
