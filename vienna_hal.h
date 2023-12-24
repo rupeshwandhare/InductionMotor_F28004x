@@ -148,8 +148,15 @@ extern "C" {
 #define VIENNA_ADC_PU_SCALE_FACTOR  ((float32_t)0.000244140625)
 
 #define ADC_VPV_GAIN  ((float32_t)0.2497808)
-#define ADC_VDC_GAIN  ((float32_t)0.20609618)
-#define ADC_I_GAIN  ((float32_t)0.0261841)
+
+// Old Values
+//#define ADC_VDC_GAIN  ((float32_t)0.0003828925)
+//#define ADC_I_GAIN  ((float32_t)0.000519792)
+
+#define ADC_VDC_GAIN  ((float32_t)0.000424057)
+#define ADC_I_GAIN  ((float32_t)0.0009218266)
+
+
 #define ADC_TEMP_GAIN  ((float32_t)0.080566)
 #define ADC_POT_GAIN  ((float32_t)0.00024332)
 #define ADC_VCC_GAIN  ((float32_t)0.00161135)
@@ -503,7 +510,7 @@ static inline void setPOWER_RELAY(void)
 {
     #pragma diag_suppress = 770
     #pragma diag_suppress = 173
-    HWREG(GPIODATA_BASE + GPIO_O_GPASET ) = POWER_RELAY_SET;
+    HWREG(GPIODATA_BASE + GPIO_O_GPBSET ) = POWER_RELAY_SET;
     #pragma diag_warning = 770
     #pragma diag_warning = 173
 }

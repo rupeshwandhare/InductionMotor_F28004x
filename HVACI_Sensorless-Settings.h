@@ -8,13 +8,17 @@ Following is the list of the Build Level choices.
 #define LEVEL2  2           // Verify ADC, park/clarke, calibrate the offset 
 #define LEVEL3  3           // Two current PI regulator test, speed measurement 
 #define LEVEL4  4           // Flux and speed estimator tests 
-#define LEVEL5  5           // Speed PI regulator test (Sensored closed-loop FOC system) 
+//#define LEVEL5  5           // Speed PI regulator test (Sensored closed-loop FOC system)
 #define LEVEL6  6           // Sensorless closed-loop FOC system
+
+#define ACIM 1
+#define PMSM 2
+#define SELECT_MACHINE ACIM
 
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL6
+#define   BUILDLEVEL LEVEL3
 
 #ifndef TRUE
 #define FALSE 0
@@ -34,6 +38,7 @@ This line sets the BUILDLEVEL to one of the available choices.
 // Define the ISR frequency (kHz)
 #define ISR_FREQUENCY 10
 
+#if (SELECT_MACHINE == ACIM)
 // Define the electrical motor parametes (1/4 hp Marathon Motor)
 #define RS 		2.76		        // Stator resistance (ohm)
 #define RR   	3.7091		        // Rotor resistance (ohm)
@@ -43,14 +48,34 @@ This line sets the BUILDLEVEL to one of the available choices.
 #define POLES  	4					// Number of poles
 
 // Define the base quantites for PU system conversion
-#define BASE_VOLTAGE    230     // Base peak phase voltage (volt)
+#define BASE_VOLTAGE    587     // Base peak phase voltage (volt)
 #define BASE_CURRENT    14.1          // Base peak phase current (amp)
 #define BASE_TORQUE         		// Base torque (N.m)
 #define BASE_FLUX       		    // Base flux linkage (volt.sec/rad)
-#define BASE_FREQ      	50         // Base electrical frequency (Hz)
+#define BASE_FREQ      	50         // Base electrical frequency (Hz)  //// modified to 100 Hz - 4/08/23 - 4:50pm
 									// Note that 0.5 pu (1800 rpm) is max for Marathon motor 
 									// Above 1800 rpm, field weakening is needed.
+#endif
 
+#if (SELECT_MACHINE == PMSM)
+// Define the electrical motor parametes (1/4 hp Marathon Motor)
+#define RS      2.8                // Stator resistance (ohm)
+#define RR                        // Rotor resistance (ohm)
+#define LS      0.00753           // Stator inductance (H)
+#define LR                      // Rotor inductance (H)
+#define LM                      // Magnatizing inductance (H)
+#define POLES   2                   // Number of poles
+
+
+// Define the base quantites for PU system conversion
+#define BASE_VOLTAGE    540       //340/sqrt(3) Base peak phase voltage (volt)
+#define BASE_CURRENT    14.0          // Base peak phase current (amp)
+#define BASE_TORQUE                 // Base torque (N.m)
+#define BASE_FLUX                   // Base flux linkage (volt.sec/rad)
+#define BASE_FREQ       120         // Base electrical frequency (Hz)
+                                    // Note that 0.5 pu (1800 rpm) is max for Marathon motor
+                                    // Above 1800 rpm, field weakening is needed.
+#endif
 
 #ifndef __ACI_FE_H__
 #define __ACI_FE_H__
@@ -295,7 +320,7 @@ Default initalizer for the ACISE object.
                           0,            \
                           (0.1),     \
                           0,            \
-                          3600,         \
+                          1500,         \
                           0,            \
                           0,            \
                           0,            \
@@ -328,23 +353,24 @@ Default initalizer for the ACISE object.
                                                                                 \
 /* Q21 = Q21 - GLOBAL_Q */                                                      \
     v.OldThetaFlux = v.ThetaFlux;                                               \
-    v.WrHat = v.WPsi - (v.WSlip);                                      \
+    v.WrHat = ( v.WPsi - (v.WSlip) ) ;                                      \
+                                                                                \
                                                                                 \
 /* Limit the estimated speed between -1 and 1 per-unit */                       \
-    if (v.WrHat>1.0)    \
-        v.WrHat=1.0;    \
-    if (v.WrHat< -1.0)  \
-        v.WrHat = -1.0; \
-                                                                          \
-/* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q */                               \
-    v.WrHatRpm = (v.BaseRpm*v.WrHat);
-
+   if (v.WrHat>1.0)    \
+            v.WrHat=1.0;    \
+   if (v.WrHat< -1.0)  \
+            v.WrHat = -1.0; \
+                                                                              \
+    /* Q0 = Q0*GLOBAL_Q => _IQXmpy(), X = GLOBAL_Q */                               \
+   v.WrHatRpm = (v.BaseRpm*v.WrHat);
 #endif // __ACI_SE_H__
 
 
-/* =================================================================================
-File name:       ACI_SE_CONST.H
-===================================================================================*/
+///* =================================================================================
+//File name:       ACI_SE_CONST.H
+//===================================================================================*/
+
 #ifndef __ACI_SE_CONST_H__
 #define __ACI_SE_CONST_H__
 
@@ -747,15 +773,15 @@ if (v.Tmp < 0.0)                                                                
 {                                                                                   \
     v.Tmp = - v.Tmp;                                                                \
 }                                                                                   \
-if (v.Tmp >= (0.0000305))                                                        \
+if (v.Tmp >= (0.0000105))                                                        \
 {                                                                                   \
     v.RampDelayCount++  ;                                                           \
         if (v.RampDelayCount >= v.RampDelayMax)                                     \
         {                                                                           \
             if (v.TargetValue >= v.SetpointValue)                                   \
-                v.SetpointValue += (0.0000305);                                  \
+                v.SetpointValue += (0.0000105);                                  \
             else                                                                    \
-                v.SetpointValue -= (0.0000305);                                  \
+                v.SetpointValue -= (0.0000105);                                  \
                                                                                     \
             if (v.SetpointValue>v.RampHighLimit) v.SetpointValue = v.RampHighLimit; \
             if (v.SetpointValue<v.RampLowLimit)  v.SetpointValue = v.RampLowLimit;  \
@@ -877,7 +903,7 @@ Default initalizer for the SPEED_MEAS_CAP object.
                                     0, \
                                     0, \
                                     0, \
-                                   1800, \
+                                   1500, \
                                     0, \
                                   }
 
@@ -1002,7 +1028,7 @@ Default initalizer for the SPEED_MEAS_QEP object.
        Default initalizer for the SMOPOS object.
        -----------------------------------------------------------------------------*/
        #define SMOPOS_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0, \
-                                  0,0,0,0,0,0,float32_t(0.5),0   \
+                                  0,0,0,0,0,0,(0.5),0   \
                                }
 
        /*------------------------------------------------------------------------------
@@ -1033,9 +1059,9 @@ Default initalizer for the SPEED_MEAS_QEP object.
            /* Compute the rotor flux angle*/                                               \
            v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) ) ;                                     \
                             if (v.tmp >=0.0)                                                            \
-                                v.ThetaFlux = v.tmp;                                                    \
+                                v.Theta = v.tmp;                                                    \
                             else                                                                        \
-                                v.ThetaFlux = v.tmp + 6.283185307;
+                                v.Theta = v.tmp + 6.283185307;
        #endif
 
 

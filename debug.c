@@ -17,6 +17,8 @@ float mo1=0.4;
 
 extern float vars1;
 extern float vars2;
+extern float vars3;
+extern float vars4;
 Uint16 select_varDAC=1;
 
 /*
@@ -57,8 +59,8 @@ void sw_debug(void)
             ch_2 = vars2;
         }
         else if(set_view==3) {
-            ch_1 = va;
-            ch_2 = vc;
+            ch_1 = vars3;
+            ch_2 = vars4;
         }
         else { // set_view =0, view of mc
 //            ch_1 = pwm.mc;
@@ -131,12 +133,12 @@ void setup_DAC_PWM(void)
 void hw_debug(void)
 {
     if (select_varDAC==1) {
-        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
-        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+vars1)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vars2)/2*(EPwm5Regs.TBPRD);
     }
     if (select_varDAC==2) {
-        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);
-        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vb)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+vars3)/2*(EPwm5Regs.TBPRD);
+        EPwm5Regs.CMPB.bit.CMPB = EPwm5Regs.TBPRD - (1+vars4)/2*(EPwm5Regs.TBPRD);
     }
     if (select_varDAC==3) {
         EPwm5Regs.CMPA.bit.CMPA = EPwm5Regs.TBPRD - (1+va)/2*(EPwm5Regs.TBPRD);

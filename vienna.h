@@ -703,8 +703,8 @@ static inline void clearPWM1Trip(void)
         //
         // clear all the configured trip sources for the PWM module
         EPWM_clearTripZoneFlag(EPWM1_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
-//        EPWM_clearTripZoneFlag(EPWM2_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
-//        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+        EPWM_clearTripZoneFlag(EPWM2_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
+        EPWM_clearTripZoneFlag(EPWM3_BASE, (EPWM_TZ_INTERRUPT_OST | EPWM_TZ_INTERRUPT_CBC | EPWM_TZ_INTERRUPT_DCAEVT1 | EPWM_TZ_INTERRUPT_DCBEVT1) );
 
         CMPSS_clearFilterLatchHigh(CMPSS1_BASE);
         CMPSS_clearFilterLatchLow(CMPSS1_BASE);
@@ -1216,10 +1216,10 @@ static inline void readCurrVolADCSignals(void)
 {
     VIENNA_iL1Meas_pu = (((float32_t)(VIENNA_IL1_FB_1 + VIENNA_IL1_FB_2 +
             VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4)) *
-            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL1MeasOffset_pu ) * 2.0f;
+            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL1MeasOffset_pu ) * 1.0f;
     VIENNA_iL2Meas_pu = (((float32_t)(VIENNA_IL2_FB_1 + VIENNA_IL2_FB_2 +
             VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4)) *
-            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL2MeasOffset_pu ) * 2.0f;
+            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL2MeasOffset_pu ) * 1.0f;
 
 /*
     VIENNA_iPV1Meas_pu = ( ((float32_t)(VIENNA_IPV1_FB_1 + VIENNA_IPV1_FB_2 +
@@ -1240,19 +1240,21 @@ static inline void readCurrVolADCSignals(void)
 
     VIENNA_vDCMeas_pu = ( ((float32_t)(VIENNA_VDC_FB_1 + VIENNA_VDC_FB_2 +
             VIENNA_VDC_FB_3 + VIENNA_VDC_FB_4)) *
-            (float32_t)ADC_VDC_GAIN * 0.25f - VIENNA_vDCMeasOffset_pu )*2.0;
+            (float32_t)ADC_VDC_GAIN * 0.25f - VIENNA_vDCMeasOffset_pu )*1.0;
 
     VIENNA_vCCMeas_pu = ( ((float32_t)(VIENNA_VCC_FB_1 + VIENNA_VCC_FB_2 +
             VIENNA_VCC_FB_3 + VIENNA_VCC_FB_4)) *
-            (float32_t)ADC_VCC_GAIN * 0.25 )*2.0;
+            (float32_t)ADC_VCC_GAIN * 0.25 )*1.0;
 
     VIENNA_TEMPMeas_pu = ( ((float32_t)(VIENNA_TEMP_FB_1 + VIENNA_TEMP_FB_2 +
             VIENNA_TEMP_FB_3 + VIENNA_TEMP_FB_4)) *
-            (float32_t)ADC_TEMP_GAIN * 0.25f )*2.0;
+            (float32_t)ADC_TEMP_GAIN * 0.25f )*1.0;
 
+/*
     VIENNA_POTMeas_pu = ( ((float32_t)(VIENNA_POT_FB_1 + VIENNA_POT_FB_2 +
             VIENNA_POT_FB_3 + VIENNA_POT_FB_4)) *
-            (float32_t)ADC_POT_GAIN * 0.25f )*2.0;
+            (float32_t)ADC_POT_GAIN * 0.25f )*1.0;
+*/
 
     //
     // clamp the vBusHalfMeas before dividing to avoid NaN
@@ -1467,7 +1469,7 @@ static inline void protections(void)
 */
 
 
-    if(VIENNA_vDCMeas_pu > 750.0)
+    if(VIENNA_vDCMeas_pu > 0.95)
     {
         EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
         EPWM_forceTripZoneEvent(EPWM2_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
@@ -1475,7 +1477,7 @@ static inline void protections(void)
 
         VIENNA_boardStatus =   boardStatus_OverVoltageTrip;
     }
-    else if( VIENNA_vDCMeas_pu < 400.0 )
+    else if( VIENNA_vDCMeas_pu < 0.40 )
         {
             EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
             EPWM_forceTripZoneEvent(EPWM2_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip

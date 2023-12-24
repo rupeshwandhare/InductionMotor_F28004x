@@ -116,13 +116,13 @@ void setupPWM(uint32_t base1, uint32_t base2, uint32_t base3, uint16_t pwm_perio
 
     EPWM_enablePhaseShiftLoad(base2);
     EPWM_setSyncOutPulseMode(base2, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base2, 667);
+    EPWM_setPhaseShift(base2, 0);
     EPWM_setCountModeAfterSync(base2, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 
 
     EPWM_enablePhaseShiftLoad(base3);
     EPWM_setSyncOutPulseMode(base3, EPWM_SYNC_OUT_PULSE_ON_SOFTWARE);
-    EPWM_setPhaseShift(base3, 1333);
+    EPWM_setPhaseShift(base3, 0);
     EPWM_setCountModeAfterSync(base3, EPWM_COUNT_MODE_UP_AFTER_SYNC);
 }
 
@@ -446,11 +446,14 @@ void setupADC(void)
 */
 
     //
-    // vDCMeas1
+    // vDCMeas1 **********************************************************************************************************************************************
     //
     ADC_setupSOC(VIENNA_VDC_ADC_MODULE, VIENNA_VDC_ADC_SOC_NO_1,
                  VIENNA_VDC_ADC_TRIG_SOURCE,
                  VIENNA_VDC_ADC_PIN, VIENNA_VDC_ACQPS_SYS_CLKS);
+    // **********************************************************************************************************************************************
+
+
     //
     // vCCMeas1
     //
@@ -463,12 +466,14 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_TEMP_ADC_MODULE, VIENNA_TEMP_ADC_SOC_NO_1,
                  VIENNA_TEMP_ADC_TRIG_SOURCE,
                  VIENNA_TEMP_ADC_PIN, VIENNA_TEMP_ACQPS_SYS_CLKS);
+/*
     //
     // POTMeas1
     //
     ADC_setupSOC(VIENNA_POT_ADC_MODULE, VIENNA_POT_ADC_SOC_NO_1,
                  VIENNA_POT_ADC_TRIG_SOURCE,
                  VIENNA_POT_ADC_PIN, VIENNA_POT_ACQPS_SYS_CLKS);
+*/
     //
     // vDCMeas2
     //
@@ -487,12 +492,14 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_TEMP_ADC_MODULE, VIENNA_TEMP_ADC_SOC_NO_2,
                  VIENNA_TEMP_ADC_TRIG_SOURCE,
                  VIENNA_TEMP_ADC_PIN, VIENNA_TEMP_ACQPS_SYS_CLKS);
+/*
     //
     // POTMeas2
     //
     ADC_setupSOC(VIENNA_POT_ADC_MODULE, VIENNA_POT_ADC_SOC_NO_2,
                  VIENNA_POT_ADC_TRIG_SOURCE,
                  VIENNA_POT_ADC_PIN, VIENNA_POT_ACQPS_SYS_CLKS);
+*/
     //
     // vDCMeas3
     //
@@ -511,12 +518,14 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_TEMP_ADC_MODULE, VIENNA_TEMP_ADC_SOC_NO_3,
                  VIENNA_TEMP_ADC_TRIG_SOURCE,
                  VIENNA_TEMP_ADC_PIN, VIENNA_TEMP_ACQPS_SYS_CLKS);
+/*
     //
     // POTMeas3
     //
     ADC_setupSOC(VIENNA_POT_ADC_MODULE, VIENNA_POT_ADC_SOC_NO_3,
                  VIENNA_POT_ADC_TRIG_SOURCE,
                  VIENNA_POT_ADC_PIN, VIENNA_POT_ACQPS_SYS_CLKS);
+*/
     //
     // vDCMeas4
     //
@@ -535,12 +544,14 @@ void setupADC(void)
     ADC_setupSOC(VIENNA_TEMP_ADC_MODULE, VIENNA_TEMP_ADC_SOC_NO_4,
                  VIENNA_TEMP_ADC_TRIG_SOURCE,
                  VIENNA_TEMP_ADC_PIN, VIENNA_TEMP_ACQPS_SYS_CLKS);
+/*
     //
     // POTMeas4
     //
     ADC_setupSOC(VIENNA_POT_ADC_MODULE, VIENNA_POT_ADC_SOC_NO_4,
                  VIENNA_POT_ADC_TRIG_SOURCE,
                  VIENNA_POT_ADC_PIN, VIENNA_POT_ACQPS_SYS_CLKS);
+*/
 }
 
 
