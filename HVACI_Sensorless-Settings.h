@@ -18,7 +18,7 @@ Following is the list of the Build Level choices.
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL1
+#define   BUILDLEVEL LEVEL3
 
 #ifndef TRUE
 #define FALSE 0
@@ -1028,7 +1028,7 @@ Default initalizer for the SPEED_MEAS_QEP object.
        Default initalizer for the SMOPOS object.
        -----------------------------------------------------------------------------*/
        #define SMOPOS_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0, \
-                                  0,0,0,0,0,0,float32_t(0.5),0   \
+                                  0,0,0,0,0,0,(0.5),0   \
                                }
 
        /*------------------------------------------------------------------------------
@@ -1059,9 +1059,9 @@ Default initalizer for the SPEED_MEAS_QEP object.
            /* Compute the rotor flux angle*/                                               \
            v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) ) ;                                     \
                             if (v.tmp >=0.0)                                                            \
-                                v.ThetaFlux = v.tmp;                                                    \
+                                v.Theta = v.tmp;                                                    \
                             else                                                                        \
-                                v.ThetaFlux = v.tmp + 6.283185307;
+                                v.Theta = v.tmp + 6.283185307;
        #endif
 
 

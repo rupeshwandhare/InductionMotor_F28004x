@@ -1,6 +1,13 @@
 
 #include "hmi.h"
 
+///////////////////////// added just for startup initialization for PMSM and IM in accordance with their base freq and good performance
+#define IM 1
+#define PMSM 2
+#define MACHINE IM
+/////////////////////////
+
+
 extern struct LCD_VARS lcd;
 extern struct COMMON_FLAG common_flag;
 extern struct COMMAND command;
@@ -48,6 +55,15 @@ unsigned char detect_parameter_transfer;
 unsigned char byte[4];
 extern float32_t VdTesting;
 
+
+extern float vars11;
+extern float vars12;
+extern float vars31;
+extern float vars32;
+extern float vars33;
+extern float vars34;
+extern float vars35;
+extern float vars36;
 
 //-------
 
@@ -200,8 +216,7 @@ extern float32_t IqRef;
 void Process_SCI_Received_Data();
 
 __interrupt void
-sciaRxISR(void)
-{
+sciaRxISR(void){
     //
     // Enable the TXFF interrupt again.
     //
@@ -244,9 +259,9 @@ void floatToByteArray(Float * fvalue, unsigned char * byteArr, unsigned char ind
 //char transmit_char1[6];
 Uint16 ID_Vars=0;
 volatile float32_t *Ptr_Vars;
-#define NosOfVars 8
+#define NosOfVars 10
 float32_t temp_vars;
-Uint16 Enable_Vars_trasmit_SCIBT=0;
+Uint16 Enable_Vars_trasmit_SCIBT=1;
 Uint16 rec_byte[6];
 void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop //Transferring 6*8 bits+2bytes gap= 64bits in one run: minimum time=64/9600=6.6msec
 {
@@ -291,40 +306,53 @@ void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop 
 // reads 4 bytes at a time and cast and stores to the receivedValue Float variable.
 void Process_SCI_Received_Data(Float * receivedValue){
 
-    if (received_char[0]==0x01) {  //command 0x01 for On and Off; received_char[0] holds command
+    if (received_char[0]==0x11) {  //command 0x01 for On and Off; received_char[0] holds command
 //        if (command_OnOff) command_OnOff=0;
 //        else command_OnOff=1;
         command_OnOff=1;
         test=1;
-        SpeedRef =0.1;
+
+///////////////////////// added just for startup initialization for PMSM and IM in accordance with their base freq and good performance
+        if (MACHINE == IM){
+            SpeedRef =0.35;
+        }
+        else{
+            SpeedRef =0.2;
+        }
+/////////////////////////
+
         GPIO_writePin(23, 0);
         LEDRed=1;
 //        GpioDataRegs.GPASET.bit.GPIO15=1;
         //        ir.Last_Switch=OnOff_Key;  //To synchronize with IR based OnOff button operation
     }
-
-/////////////////////////////////////////////////////////
-    else if (received_char[0]==0x11) {  //command 0x11 for turn off
+    else if (received_char[0]==0x12) {  //command 0x11 for turn off
         command_OnOff=0;
         test=2;
         GPIO_writePin(23, 1);
         LEDRed=0;
        }
-/////////////////////////////////////////////////////////
-
-    else if (received_char[0]==0x02) {  //command 0x02 for upscreen; received_char[0] holds command
+    else if (received_char[0]==0x14) {  //command 0x02 for upscreen; received_char[0] holds command
         ir.Last_Switch=UP_Key;   //To synchronize with IR based UPKEY button operation
-        SpeedRef = SpeedRef + 0.025;
+        SpeedRef = SpeedRef + 0.0125;
+
+//        /////////////////////////////////////////////////////////
+//        IqRef=IqRef+0.025;// only for level-3
+//        /////////////////////////////////////////////////////////
     }
-    else if (received_char[0]==0x03) {  //command 0x03 for downscreen; received_char[0] holds command
+    else if (received_char[0]==0x15) {  //command 0x03 for downscreen; received_char[0] holds command
         ir.Last_Switch=DOWN_Key;  //To synchronize with IR based Downkey button operation
-        SpeedRef = SpeedRef - 0.025;
+        SpeedRef = SpeedRef - 0.0125;
+
+//        /////////////////////////////////////////////////////////
+//        IqRef=IqRef-0.025;// only for level-3
+//        /////////////////////////////////////////////////////////
     }
     else if (received_char[0]==0x08) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef + 0.025;
+        IdRef = IdRef + 0.0125;
     }
     else if (received_char[0]==0x09) {  //command 0x03 for downscreen; received_char[0] holds command
-        IdRef = IdRef - 0.025;
+        IdRef = IdRef - 0.0125;
     }
     else if (received_char[0]==0x05) {  //command 0x05 for password match for SCIBT to change variables; received_char[0] holds command
         if ( received_char[1]==0x62 && received_char[2]==0x84  )    //match these passwords received from app to enable constants to change.
@@ -472,25 +500,25 @@ void pickup_vars(void)
         Ptr_Vars = &VIENNA_iL1Meas_pu;
         break;
     case 3:
-        Ptr_Vars = &sensor_v_pv1_fltr;
+        Ptr_Vars = &VIENNA_iL2Meas_pu;
         break;
     case 4:
-        Ptr_Vars = &il1_control_ref;
+        Ptr_Vars = &vars33;
         break;
     case 5:
-        Ptr_Vars = &sensor_i_pv1_fltr;
+        Ptr_Vars = &vars34;
         break;
     case 6:
-        Ptr_Vars = &vpv2_control_ref;
+        Ptr_Vars = &vars11;
         break;
     case 7:
-        Ptr_Vars = &sensor_v_pv2_fltr;
+        Ptr_Vars = &vars31;
         break;
     case 8:
-        Ptr_Vars = &il2_control_ref;
+        Ptr_Vars = &vars12;
         break;
     case 9:
-        Ptr_Vars = &sensor_i_pv2_fltr;
+        Ptr_Vars = &vars32;
         break;
     case 10:
         Ptr_Vars = &VIENNA_TEMPMeas_pu;

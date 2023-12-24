@@ -1250,9 +1250,11 @@ static inline void readCurrVolADCSignals(void)
             VIENNA_TEMP_FB_3 + VIENNA_TEMP_FB_4)) *
             (float32_t)ADC_TEMP_GAIN * 0.25f )*1.0;
 
+/*
     VIENNA_POTMeas_pu = ( ((float32_t)(VIENNA_POT_FB_1 + VIENNA_POT_FB_2 +
             VIENNA_POT_FB_3 + VIENNA_POT_FB_4)) *
             (float32_t)ADC_POT_GAIN * 0.25f )*1.0;
+*/
 
     //
     // clamp the vBusHalfMeas before dividing to avoid NaN

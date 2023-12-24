@@ -32,18 +32,18 @@ extern float32_t IQcosTable[];
 float32_t VdTesting = (0.30);           // Vd reference (pu)
 float32_t VqTesting = (0.0);           // Vq reference (pu)
 float32_t IdRef = (0.2);               // Id reference (pu)
-float32_t IqRef = (0.07);              // Iq reference (pu)
-float32_t SpeedRef = (0.10);            // Speed reference (pu)
+float32_t IqRef = (0.15);              // Iq reference (pu)
+float32_t SpeedRef = 0.3;            // Speed reference (pu)
 
 float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
 #endif
 
 #if (SELECT_MACHINE == PMSM)
-float32_t VdTesting = (0.0);           // Vd reference (pu)
-float32_t VqTesting = (0.15);           // Vq reference (pu)
+float32_t VdTesting = (0.30);           // Vd reference (pu)
+float32_t VqTesting = (0.0);           // Vq reference (pu)
 float32_t IdRef = (0.0);               // Id reference (pu)
-float32_t IqRef = (0.1);              // Iq reference (pu)
-float32_t SpeedRef = (0.3);            // Speed reference (pu)
+float32_t IqRef = (0.3);              // Iq reference (pu)
+float32_t SpeedRef = 0.2;            // Speed reference (pu)
 
 float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
 #endif
@@ -138,6 +138,12 @@ float kifactor=0.1;
 float vars7=0.0;
 float vars11 = 0.0;
 float vars12 = 0.0;
+float vars31 = 0.0;
+float vars32 = 0.0;
+float vars33 = 0.0;
+float vars34 = 0.0;
+float vars35 = 0.0;
+float vars36 = 0.0;
 
 #pragma FUNC_ALWAYS_INLINE(clearPWMTrip)
 static inline void clearPWMTrip(void)
@@ -197,9 +203,10 @@ void init_motor(void)
         speed3.K1 = (1/(BASE_FREQ*T)); //_IQ21(1/(BASE_FREQ*T));
         speed3.K2 = (1/(1+T*2*PI*5)); //_IQ(1/(1+T*2*PI*5));  // Low-pass cut-off frequency
         speed3.K3 = (1)-speed3.K2; //_IQ(1)-speed3.K2;
-        speed3.BaseRpm = 120*(BASE_FREQ/POLES);
+        speed3.BaseRpm = 2*120*(BASE_FREQ/POLES);
 #endif
 
+#if (SELECT_MACHINE == ACIM)
     // Initialize the aci flux estimator constants module
         fe1_const.Rs = RS;
         fe1_const.Rr = RR;
@@ -237,6 +244,7 @@ void init_motor(void)
         se1.K3 = (se1_const.K3);
         se1.K4 = (se1_const.K4);
         se1.BaseRpm = 120*BASE_FREQ/POLES;
+#endif
 
 #if (SELECT_MACHINE == PMSM)
     // Initialize the SMOPOS constant module
@@ -255,42 +263,42 @@ void init_motor(void)
 #endif
 
     // Initialize the PI module for speed
-        pi_spd.Kp= kpfactor*2.0; //20.0; //(2.0);
-        pi_spd.Ki= kifactor*(T*SpeedLoopPrescaler/0.5); //(T*SpeedLoopPrescaler/3.0); //(T*SpeedLoopPrescaler/0.5);
+        pi_spd.Kp= kpfactor*2*0.005; //20.0; //(2.0); reduced
+        pi_spd.Ki= kifactor*(T*SpeedLoopPrescaler/0.5)*0.5; //(T*SpeedLoopPrescaler/3.0); //(T*SpeedLoopPrescaler/0.5);
+        pi_spd.Umax =(0.95);
+        pi_spd.Umin =(-0.95);
+
+    // Initialize the PI module for Id
+        pi_id.Kp=(1.0)*0.5;
+        pi_id.Ki=(T/0.004)*0.5;
+        pi_id.Umax = 0.3; //(0.3);
+        pi_id.Umin = -0.3; //(-0.3);
+
+    // Initialize the PI module for Iq
+        pi_iq.Kp=(1.0)*0.5;
+        pi_iq.Ki=(T/0.004)*0.5;
+        pi_iq.Umax =(1.0);//0
+        pi_iq.Umin =(-1.0);
+
+
+#if (SELECT_MACHINE == PMSM)
+    // Initialize the PI module for speed
+        pi_spd.Kp=(1.5)*0.1;
+        pi_spd.Ki=(T*SpeedLoopPrescaler/0.5)*0.1;
         pi_spd.Umax =(0.95);
         pi_spd.Umin =(-0.95);
 
     // Initialize the PI module for Id
         pi_id.Kp=(1.0);
         pi_id.Ki=(T/0.004);
-        pi_id.Umax = 0.5; //(0.3);
-        pi_id.Umin = -0.5; //(-0.3);
+        pi_id.Umax =(0.15);
+        pi_id.Umin =(-0.15);
 
     // Initialize the PI module for Iq
         pi_iq.Kp=(1.0);
         pi_iq.Ki=(T/0.004);
-        pi_iq.Umax =(1.6);//0
-        pi_iq.Umin =(-1.6);
-
-
-#if (SELECT_MACHINE == PMSM)
-    // Initialize the PI module for speed
-        pi_spd.Kp=(1.5);
-        pi_spd.Ki=(T*SpeedLoopPrescaler/0.5);
-        pi_spd.Umax =(0.95);
-        pi_spd.Umin =(-0.95);
-
-    // Initialize the PI module for Id
-        pi_id.Kp=(1.0);
-        pi_id.Ki=(T/0.04);
-        pi_id.Umax =(0.4);
-        pi_id.Umin =(-0.4);
-
-    // Initialize the PI module for Iq
-        pi_iq.Kp=(1.0);
-        pi_iq.Ki=(T/0.04);
-        pi_iq.Umax =(0.8);
-        pi_iq.Umin =(-0.8);
+        pi_iq.Umax =(0.825);
+        pi_iq.Umin =(-0.825);
 #endif
 
 /*
@@ -548,8 +556,11 @@ void MotorISR(void)
 	park1.Cosine = cosf(park1.Angle);
 	PARK_MACRO(park1) 
  
-	vars1 = clarke1.Alpha;
-	vars2 = clarke1.Beta;
+//	vars1 = clarke1.Alpha;
+//	vars2 = clarke1.Beta;
+
+	vars1 =park1.Qs;
+	vars2 =park1.Ds;
 
     vars3 = sensor_i_L1_fltr;   //it generated 1.6A rms current
     vars4 = sensor_i_L2_fltr;
@@ -647,6 +658,7 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------
     rg1.Freq = rc1.SetpointValue;
 	RG_MACRO(rg1) 
+
 
 // ------------------------------------------------------------------------------
 //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1). 
@@ -1261,6 +1273,9 @@ void MotorISR(void)
 	else SpeedLoopCount++;  
 
 	if(lsw==0)	{pi_spd.ui=0; pi_spd.i1=0;}
+
+	vars33 = pi_spd.Fbk;
+	vars34 = pi_spd.Ref;
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PI module and call the PI IQ controller macro
 // ------------------------------------------------------------------------------ 
@@ -1270,6 +1285,7 @@ void MotorISR(void)
 	PI_MACRO(pi_iq)
 
 	vars11 = pi_iq.Fbk;
+	vars31 = pi_iq.Ref;
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PI module and call the PI ID controller macro
 // ------------------------------------------------------------------------------  
@@ -1278,6 +1294,7 @@ void MotorISR(void)
 	PI_MACRO(pi_id)
 
 	vars12 = pi_id.Fbk;
+	vars32 = pi_id.Ref;
 
 // ------------------------------------------------------------------------------
 //	Connect inputs of the INV_PARK module and call the inverse park trans. macro
@@ -1336,6 +1353,7 @@ void MotorISR(void)
     SMO_MACRO(smo1)
 #endif
 
+#if (SELECT_MACHINE == ACIM)
 // ------------------------------------------------------------------------------
 //    Connect inputs of the ACI module and call the speed estimation macro
 // ------------------------------------------------------------------------------
@@ -1345,6 +1363,7 @@ void MotorISR(void)
 	se1.PsiQrS = fe1.PsiQrS;
 	se1.ThetaFlux = fe1.ThetaFlux / (2*PI) ;
 	ACISE_MACRO(se1)
+#endif
 
 #if (SELECT_MACHINE == PMSM)
     speed3.EstimatedTheta = smo1.Theta;
