@@ -823,7 +823,9 @@ void VIENNA_calibrateOffset()
             VIENNA_vPV1MeasOffset_pu = 0.0;
             VIENNA_vPV2MeasOffset_pu = 0.0;
 */
-            VIENNA_vDCMeasOffset_pu = -0.028;//0.0;
+            VIENNA_vDCMeasOffset_pu = 26.00;//0.0;
+            VIENNA_iL1MeasOffset_pu = 2052.1;
+            VIENNA_iL2MeasOffset_pu = 2064.2;
 
             VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
             VIENNA_offsetCalCounter++;

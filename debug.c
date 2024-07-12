@@ -5,8 +5,8 @@
 //extern struct PWM_VARS pwm;
 //extern struct DEBUG_CONFIG debug;
 
-float graph[100];
-Uint16 ch_array_length = 100;
+extern float graph[200];
+Uint16 ch_array_length = 200;
 float ch_1=0, ch_2=0;
 Uint16 sample=3, set_view=2;
 
@@ -79,7 +79,7 @@ void sw_debug(void)
 //        graph[k] = va;
 
         k++;
-        if(k>=99) {
+        if(k>=199) {
             k = 0;
         }
 

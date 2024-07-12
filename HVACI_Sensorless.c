@@ -32,7 +32,7 @@ extern float32_t IQcosTable[];
 float32_t VdTesting = (0.30);           // Vd reference (pu)
 float32_t VqTesting = (0.0);           // Vq reference (pu)
 float32_t IdRef = (0.2);               // Id reference (pu)
-float32_t IqRef = (0.15);              // Iq reference (pu)
+float32_t IqRef = (0.05);              // Iq reference (pu)
 float32_t SpeedRef = 0.3;            // Speed reference (pu)
 
 float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
@@ -42,8 +42,8 @@ float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
 float32_t VdTesting = (0.30);           // Vd reference (pu)
 float32_t VqTesting = (0.0);           // Vq reference (pu)
 float32_t IdRef = (0.0);               // Id reference (pu)
-float32_t IqRef = (0.3);              // Iq reference (pu)
-float32_t SpeedRef = 0.2;            // Speed reference (pu)
+float32_t IqRef = (0.15);              // Iq reference (pu)
+float32_t SpeedRef = 0.05;            // Speed reference (pu)
 
 float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
 #endif
@@ -52,12 +52,12 @@ float32 T = 0.001/ISR_FREQUENCY;    // Samping period (sec), see parameter.h
 
 Uint32 IsrTicker = 0;
 Uint16 BackTicker = 0;
-Uint16 lsw=1;
+Uint16 lsw=0;
 Uint16 TripFlagDMC=0;               //PWM trip status
 
 volatile Uint16 EnableFlag = FALSE;
 
-Uint16 SpeedLoopPrescaler = 5; //5; //10     // Speed loop prescaler
+Uint16 SpeedLoopPrescaler = 10; //5; //10     // Speed loop prescaler
 Uint16 SpeedLoopCount = 1;           // Speed loop counter
 
 // Instance rotor flux and speed estimations
@@ -73,6 +73,9 @@ ACISE_CONST se1_const = ACISE_CONST_DEFAULTS;
 SMOPOS smo1 = SMOPOS_DEFAULTS;
 // Instance a sliding-mode position observer constant Module
 SMOPOS_CONST smo1_const = SMOPOS_CONST_DEFAULTS;
+
+// Instance for Open Loop Flux estimator
+OLFO olfo1 = OLFO_DEFAULTS;
 #endif
 
 
@@ -144,6 +147,13 @@ float vars33 = 0.0;
 float vars34 = 0.0;
 float vars35 = 0.0;
 float vars36 = 0.0;
+float pi_d, pi_q, id, iq, freq, md, mq, speed_estimated;
+float Kslide_limit=0.3;
+float delTheta=0;//-1.35;// constant value found after trails conducted on 10/07/2024
+
+void SMO_THETA(void);
+
+
 
 #pragma FUNC_ALWAYS_INLINE(clearPWMTrip)
 static inline void clearPWMTrip(void)
@@ -172,6 +182,19 @@ static inline void clearPWMTrip(void)
     }
 }
 
+float a1;
+float Rst=RS;
+float Lst=LS;
+// Parameters
+//    float a=expf(-RS*0.0001/LS);
+float a;
+float b;
+float g=0.9; // Disturbance observer gain - This should be between 0 to 1, best accuracy is at g=1 but sluggish
+float zeta=0.697; //>1.1*b*m/(g*BASE_CURRENT); // current observer gain in PU
+float Fc=1000; // Chattering LPF cut off frequency in Hz
+float af;
+float gBYb;
+
 void init_motor(void)
 {
 
@@ -188,7 +211,14 @@ void init_motor(void)
         speed1.K1 = (1/(BASE_FREQ*T));
         speed1.K2 = (1/(1+T*2*PI*5));  // Low-pass cut-off frequency
         speed1.K3 = (1)-speed1.K2;
+
+#if (SELECT_MACHINE == ACIM)
         speed1.BaseRpm = 2*120*(BASE_FREQ/POLES);    //// modified  4/08/23 - 4:48pm
+#endif
+
+#if (SELECT_MACHINE == PMSM)
+        speed1.BaseRpm = 120*(BASE_FREQ/POLES);  //// modified  09/07/24 - 12:08 pm
+#endif
 
     // Initialize the Speed module for capture eQEP based speed calculation (low speed range)
         speed2.InputSelect = 1;
@@ -203,7 +233,7 @@ void init_motor(void)
         speed3.K1 = (1/(BASE_FREQ*T)); //_IQ21(1/(BASE_FREQ*T));
         speed3.K2 = (1/(1+T*2*PI*5)); //_IQ(1/(1+T*2*PI*5));  // Low-pass cut-off frequency
         speed3.K3 = (1)-speed3.K2; //_IQ(1)-speed3.K2;
-        speed3.BaseRpm = 2*120*(BASE_FREQ/POLES);
+        speed3.BaseRpm = 120*(BASE_FREQ/POLES);  //// modified  09/07/24 - 12:08 pm
 #endif
 
 #if (SELECT_MACHINE == ACIM)
@@ -258,27 +288,38 @@ void init_motor(void)
     // Initialize the SMOPOS module
         smo1.Fsmopos = smo1_const.Fsmopos; //_IQ(smo1_const.Fsmopos);
         smo1.Gsmopos = smo1_const.Gsmopos; //_IQ(smo1_const.Gsmopos);
-        smo1.Kslide  = 0.05308703613;   //_IQ(0.05308703613);
-        smo1.Kslf = 0.1057073975;  //_IQ(0.1057073975);
+        smo1.Kslide  = 0.65308703613;   //_IQ(0.05308703613);
+        smo1.Kslf = _IQ(0.9057073975);//_IQ(0.02057073975);//0.1057073975;  //_IQ(0.1057073975); // By pass low pass filter 11/07/2024
+        smo1.delTheta=0;
+        smo1.k1  = 0.7285;  // Variable: Filter variable- added in 11/07/2024 for wc=2*pi*1440 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts);
+        smo1.k2  = 0.1358;  // Variable: Filter variable- added in 11/07/2024 for wc=2*pi*1440 k2=Ts/(2Tau+Ts)
+        smo1.E0=0.5; // Signum function parameter
+
+    // Initialize the OLFO module
+        olfo1.Rs = RS*BASE_CURRENT/BASE_VOLTAGE; // Rs in pu
+        olfo1.Ls = 2*PI*BASE_FREQ*LS*BASE_CURRENT/BASE_VOLTAGE; // Ls in pu
+        olfo1.K1 = 0.998; // Filter parameter-1
+        olfo1.K2 = T; // Filter parameter-2
+        olfo1.delTheta = 0;
 #endif
 
     // Initialize the PI module for speed
-        pi_spd.Kp= kpfactor*2*0.005; //20.0; //(2.0); reduced
-        pi_spd.Ki= kifactor*(T*SpeedLoopPrescaler/0.5)*0.5; //(T*SpeedLoopPrescaler/3.0); //(T*SpeedLoopPrescaler/0.5);
-        pi_spd.Umax =(0.95);
-        pi_spd.Umin =(-0.95);
+        pi_spd.Kp= kpfactor*2*0.5*5; //20.0; //(2.0); reduced
+        pi_spd.Ki= kifactor*(T*SpeedLoopPrescaler/0.5)*0.5*5; //(T*SpeedLoopPrescaler/3.0); //(T*SpeedLoopPrescaler/0.5);
+        pi_spd.Umax =(0.5);
+        pi_spd.Umin =(-0.5);
 
     // Initialize the PI module for Id
         pi_id.Kp=(1.0)*0.5;
         pi_id.Ki=(T/0.004)*0.5;
-        pi_id.Umax = 0.3; //(0.3);
-        pi_id.Umin = -0.3; //(-0.3);
+        pi_id.Umax = 0.95; //(0.3);
+        pi_id.Umin = -0.95; //(-0.3);
 
     // Initialize the PI module for Iq
         pi_iq.Kp=(1.0)*0.5;
         pi_iq.Ki=(T/0.004)*0.5;
-        pi_iq.Umax =(1.0);//0
-        pi_iq.Umin =(-1.0);
+        pi_iq.Umax =(0.5);//0
+        pi_iq.Umin =(-0.5);
 
 
 #if (SELECT_MACHINE == PMSM)
@@ -289,18 +330,23 @@ void init_motor(void)
         pi_spd.Umin =(-0.95);
 
     // Initialize the PI module for Id
-        pi_id.Kp=(1.0);
-        pi_id.Ki=(T/0.004);
-        pi_id.Umax =(0.15);
-        pi_id.Umin =(-0.15);
+        pi_id.Kp=(1.0*1.042);
+        pi_id.Ki=(T/0.0002);
+        pi_id.Umax =0.45;//(0.85);
+        pi_id.Umin =-0.45;//(-0.85);
 
     // Initialize the PI module for Iq
-        pi_iq.Kp=(1.0);
-        pi_iq.Ki=(T/0.004);
-        pi_iq.Umax =(0.825);
-        pi_iq.Umin =(-0.825);
+        pi_iq.Kp=(1.0*1.042);
+        pi_iq.Ki=(T/0.0002);
+        pi_iq.Umax =0.95;//(0.5);
+        pi_iq.Umin =-0.95;//(-0.5);
 #endif
 
+
+        a1=expf((float)(-Rst*0.0001/Lst));
+        b=(1-a1)*BASE_VOLTAGE/(BASE_CURRENT*RS);
+        af=(2*PI*0.0001*Fc)/(1+(2*PI*0.0001*Fc)); // IIR Low pass filter variable af=(2*pi*Ts*Fc)/(1+(2*pi*Ts*Fc))
+        gBYb = g/b;
 /*
 
         // Instance rotor flux and speed estimations
@@ -353,7 +399,7 @@ void init_motor(void)
 //        HVDMC_Protection();
 
         MACHINE_STATE = DC_CHARGING;
-        update_const_vdc_threshold_charging_to_idle = 0.4;
+        update_const_vdc_threshold_charging_to_idle = 250; //////////////////////////////
         clearPWMTrip();
         MotorActiveFlag =0;
 }
@@ -400,6 +446,102 @@ void C1(void) 	// Toggle GPIO-34
 
 */
 
+// SMO function based on SIMULINK block - 12/07/2024
+float Valpha=0;
+float Vbeta=0;
+float Ialpha=0;
+float Ibeta=0;
+
+float Ialpha_est_old=0;
+float Ialpha_est=0;
+
+float Ibeta_est_old=0;
+float Ibeta_est=0;
+
+float Ealpha_est_old=0;
+float Ealpha_est=0;
+
+float Ebeta_est_old=0;
+float Ebeta_est=0;
+
+float Ialpha_error=0;
+float Ialpha_error_old=0;
+
+float Ibeta_error=0;
+float Ibeta_error_old=0;
+
+float Zalpha=0;
+float Zalpha_old=0;
+
+float Zbeta=0;
+float Zbeta_old=0;
+
+float Ealpha_final=0;
+float Ebeta_final=0;
+
+float theta=0;
+
+float Ts=0.0001;
+
+float m=((float)2*PI*BASE_FREQ*BASE_VOLTAGE*0.0001);
+
+
+void SMO_THETA(void){
+    // Current Estimators
+    Ialpha_est=a*Ialpha_est_old+b*(Valpha-Ealpha_est_old)-Zalpha;
+    Ibeta_est=a*Ibeta_est_old+b*(Vbeta-Ebeta_est_old)-Zbeta;
+
+    // Errors in current and its previous estimates
+    Ialpha_error=Ialpha_est-Ialpha;
+    Ibeta_error=Ibeta_est-Ibeta;
+
+    // Current error sliding surface
+    // Zalpha
+    if((Ialpha_error)>0){
+        Zalpha=zeta;
+    }
+    else if((Ialpha_error)<0){
+        Zalpha=-zeta;
+    }
+    else{
+        Zalpha=0;
+    }
+    // Zbeta
+    if((Ibeta_error)>0){
+            Zbeta=zeta;
+    }
+    else if((Ibeta_error)<0){
+        Zbeta=-zeta;
+    }
+    else{
+        Zbeta=0;
+    }
+
+    // BEMF Estimators
+    Ealpha_est=Ealpha_est_old+gBYb*(Zalpha_old+Ialpha_error-a*Ialpha_error_old);
+    Ebeta_est=Ebeta_est_old+gBYb*(Zbeta_old+Ibeta_error-a*Ibeta_error_old);
+
+    // Chattering reduction IIR LPF for Estimated BEMFs'
+    Ealpha_final=af*Ealpha_est+(1-af)*Ealpha_final;
+    Ebeta_final=af*Ebeta_est+(1-af)*Ebeta_final;
+
+    // Rotor angle Computation (SIMPLE)
+    theta=(atan2f(-Ealpha_final,Ebeta_final))+delTheta;
+    if(theta >= 0) theta = theta+0;
+    if(theta < 0) theta = theta+6.283185307;
+
+    // Next iteration updation of previous values
+    Ialpha_est_old=Ialpha_est;
+    Ibeta_est_old=Ibeta_est;
+    Zalpha_old=Zalpha;
+    Zbeta_old=Zbeta;
+    Ealpha_est_old=Ealpha_est;
+    Ebeta_est_old=Ebeta_est;
+    Ialpha_error_old=Ialpha_error;
+    Ibeta_error_old=Ibeta_error;
+}
+
+
 
 float vars1=0.0;
 float vars2=0.0;
@@ -439,7 +581,7 @@ void MotorISR(void)
 // ------------------------------------------------------------------------------
 //  Connect inputs of the RMP module and call the ramp control macro
 // ------------------------------------------------------------------------------
-    rc1.TargetValue = SpeedRef;		
+    rc1.TargetValue = SpeedRef;
 	RC_MACRO(rc1)
 
 // ------------------------------------------------------------------------------
@@ -526,24 +668,19 @@ void MotorISR(void)
 	RG_MACRO(rg1) 
 
 // ------------------------------------------------------------------------------
-//  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1). 
-//	Connect inputs of the CLARKE module and call the clarke transformation macro
+//  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1).
+//  Connect inputs of the CLARKE module and call the clarke transformation macro
 // ------------------------------------------------------------------------------
-/*
-	#ifdef DSP2833x_DEVICE_H
-	clarke1.As=((AdcMirror.ADCRESULT1)*0.00024414-offsetA)*2*0.909; // Phase A curr.
-	clarke1.Bs=((AdcMirror.ADCRESULT2)*0.00024414-offsetB)*2*0.909; // Phase B curr.
-	#endif														   // ((ADCmeas(q12)/2^12)-offset)*2*(3.0/3.3)			
-	
-	#ifdef DSP2803x_DEVICE_H
-	clarke1.As = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT1)-offsetA); // Phase A curr.
-	clarke1.Bs = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT2)-offsetB); // Phase B curr.	
-	#endif														   // (ADCmeas(q12->q24)-offset)*2	
-*/
-    clarke1.As=sensor_i_L1_fltr; // Phase A curr.
-    clarke1.Bs=sensor_i_L2_fltr; // Phase B curr.
+    #if (SELECT_MACHINE == ACIM)
+        clarke1.As=0.0954*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.0954*sensor_i_L2_fltr; // Phase B curr.
+    #endif
+    #if (SELECT_MACHINE == PMSM)
+        clarke1.As=0.1345*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.1345*sensor_i_L2_fltr; // Phase B curr.
+    #endif
 
-	
+
 	CLARKE_MACRO(clarke1)  
 
 // ------------------------------------------------------------------------------
@@ -674,8 +811,18 @@ void MotorISR(void)
 	clarke1.Bs = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT2)-offsetB); // Phase B curr.	
 	#endif														   // (ADCmeas(q12->q24)-offset)*2	
 	
-    clarke1.As=sensor_i_L1_fltr; // Phase A curr.
-    clarke1.Bs=sensor_i_L2_fltr; // Phase B curr.
+	// ------------------------------------------------------------------------------
+    //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1).
+    //  Connect inputs of the CLARKE module and call the clarke transformation macro
+    // ------------------------------------------------------------------------------
+    #if (SELECT_MACHINE == ACIM)
+        clarke1.As=0.0954*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.0954*sensor_i_L2_fltr; // Phase B curr.
+    #endif
+    #if (SELECT_MACHINE == PMSM)
+        clarke1.As=0.1345*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.1345*sensor_i_L2_fltr; // Phase B curr.
+    #endif
 
 	CLARKE_MACRO(clarke1)  
 
@@ -784,11 +931,16 @@ void MotorISR(void)
     ipark2.Cosine = park1.Cosine;
     IPARK_MACRO(ipark2)
 
+/*
     vars1 = clarke1.Alpha;
     vars2 = ipark2.Alpha;
+*/
 
-    vars3 = clarke1.Beta;   //it generated 1.6A rms current
-    vars4 = ipark2.Beta;
+    id = park1.Ds;
+    iq = park1.Qs;
+
+    pi_d = pi_id.Out;//clarke1.Beta;   //it generated 1.6A rms current
+    pi_q = pi_iq.Out;//ipark2.Beta;
 
 
 
@@ -830,43 +982,67 @@ void MotorISR(void)
 
 #if (BUILDLEVEL==LEVEL4)
 
-// ------------------------------------------------------------------------------
-//  Connect inputs of the RMP module and call the ramp control macro
-// ------------------------------------------------------------------------------
-    rc1.TargetValue = SpeedRef;		
-	RC_MACRO(rc1)
+    // ------------------------------------------------------------------------------
+    //  Connect inputs of the RMP module and call the ramp control macro
+    // ------------------------------------------------------------------------------
+    rc1.TargetValue = SpeedRef;
+    RC_MACRO(rc1)
 
-// ------------------------------------------------------------------------------
-//  Connect inputs of the RAMP GEN module and call the ramp generator macro
-// ------------------------------------------------------------------------------
+    // ------------------------------------------------------------------------------
+    //  Connect inputs of the RAMP GEN module and call the ramp generator macro
+    // ------------------------------------------------------------------------------
     rg1.Freq = rc1.SetpointValue;
-	RG_MACRO(rg1) 
+    RG_MACRO(rg1)
 
-// ------------------------------------------------------------------------------
-//  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1). 
-//	Connect inputs of the CLARKE module and call the clarke transformation macro
-// ------------------------------------------------------------------------------
-	#ifdef DSP2833x_DEVICE_H
-	clarke1.As=((AdcMirror.ADCRESULT1)*0.00024414-offsetA)*2*0.909; // Phase A curr.
-	clarke1.Bs=((AdcMirror.ADCRESULT2)*0.00024414-offsetB)*2*0.909; // Phase B curr.
-	#endif												 // ((ADCmeas(q12)/2^12)-offset)*2*(3.0/3.3)			
-	
-	#ifdef DSP2803x_DEVICE_H
-	clarke1.As = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT1)-offsetA); // Phase A curr.
-	clarke1.Bs = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT2)-offsetB); // Phase B curr.	
-	#endif														   // (ADCmeas(q12->q24)-offset)*2	
 
-    clarke1.As=sensor_i_L1_fltr; // Phase A curr.
-    clarke1.Bs=sensor_i_L2_fltr; // Phase B curr.
+    // ------------------------------------------------------------------------------
+    //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1).
+    //  Connect inputs of the CLARKE module and call the clarke transformation macro
+    // ------------------------------------------------------------------------------
+    #ifdef DSP2833x_DEVICE_H
+    clarke1.As=((AdcMirror.ADCRESULT1)*0.00024414-offsetA)*2*0.909; // Phase A curr.
+    clarke1.Bs=((AdcMirror.ADCRESULT2)*0.00024414-offsetB)*2*0.909; // Phase B curr.
+    #endif                                                          // ((ADCmeas(q12)/2^12)-offset)*2*(3.0/3.3)
 
-	CLARKE_MACRO(clarke1)  
+    #ifdef DSP2803x_DEVICE_H
+    clarke1.As = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT1)-offsetA); // Phase A curr.
+    clarke1.Bs = _IQmpy2(_IQ12toIQ(AdcResult.ADCRESULT2)-offsetB); // Phase B curr.
+    #endif                                                         // (ADCmeas(q12->q24)-offset)*2
+
+    // ------------------------------------------------------------------------------
+    //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1).
+    //  Connect inputs of the CLARKE module and call the clarke transformation macro
+    // ------------------------------------------------------------------------------
+    #if (SELECT_MACHINE == ACIM)
+        clarke1.As=0.0954*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.0954*sensor_i_L2_fltr; // Phase B curr.
+    #endif
+    #if (SELECT_MACHINE == PMSM)
+        clarke1.As=0.1345*sensor_i_L1_fltr; // Phase A curr.
+        clarke1.Bs=0.1345*sensor_i_L2_fltr; // Phase B curr.
+    #endif
+
+    CLARKE_MACRO(clarke1)
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PARK module and call the park trans. macro
 // ------------------------------------------------------------------------------
     park1.Alpha = clarke1.Alpha;
     park1.Beta  = clarke1.Beta;
-    park1.Angle = rg1.Out;
+//    park1.Angle = rg1.Out;
+
+#if (SELECT_MACHINE == ACIM)
+    if(lsw==0) park1.Angle = rg1.Out;
+    else park1.Angle = fe1.ThetaFlux;
+#endif
+
+#if (SELECT_MACHINE == PMSM)
+    if(lsw==0) park1.Angle = rg1.Out;
+//    else park1.Angle = smo1.Theta;
+//    else park1.Angle = olfo1.Theta;
+    else park1.Angle = theta;
+#endif
+
     park1.Sine = sinf(park1.Angle);
     park1.Cosine = cosf(park1.Angle);
     PARK_MACRO(park1)
@@ -895,31 +1071,8 @@ void MotorISR(void)
     ipark1.Cosine = park1.Cosine;
 	IPARK_MACRO(ipark1) 
 
-// ------------------------------------------------------------------------------
-//  Call the QEP macro (if incremental encoder used for speed sensing)
-//  Connect inputs of the SPEED_FR module and call the speed calculation macro
-// ------------------------------------------------------------------------------ 
-/*
-    QEP_MACRO(1,qep1)
-
-    speed1.ElecTheta = qep1.ElecTheta;
-    speed1.DirectionQep = (int32)(qep1.DirectionQep);
-    SPEED_FR_MACRO(speed1)
-*/
-
-// ------------------------------------------------------------------------------
-//  Call the CAP macro (if sprocket or spur gear used for speed sensing)
-//  Connect inputs of the SPEED_PR module and call the speed calculation macro
-// ------------------------------------------------------------------------------ 
-/*
-	CAP_MACRO(1,cap1) 
-
-    if(cap1.CapReturn ==0)             				     // Check the capture return
-    {
-        speed2.EventPeriod=(int32)(cap1.EventPeriod);    // Read out new event period
-        SPEED_PR_MACRO(speed2)                 			 // Call the speed macro      
-    } 
-*/
+    vars33=ipark1.Ds;
+	vars34=ipark1.Qs;
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the VOLT_CALC module and call the phase voltage calc. macro
@@ -940,6 +1093,7 @@ void MotorISR(void)
     PHASEVOLT_MACRO(volt1)        
 
 
+#if (SELECT_MACHINE == ACIM)
 // ------------------------------------------------------------------------------
 //    Connect inputs of the ACI module and call the flux estimation macro
 // ------------------------------------------------------------------------------
@@ -948,8 +1102,46 @@ void MotorISR(void)
  	fe1.IDsS = clarke1.Alpha;
 	fe1.IQsS = clarke1.Beta;
 	ACIFE_MACRO(fe1)
+#endif
 
+#if (SELECT_MACHINE == PMSM)
+// ------------------------------------------------------------------------------
+//    Connect inputs of the SMO_POS module and call the sliding-mode observer macro
+// ------------------------------------------------------------------------------
+//	if (lsw==1){
+        if (lsw==0 && smo1.Kslide<_IQ(Kslide_limit)) smo1.Kslide=smo1.Kslide+_IQ(0.00001);
+        // Increase Kslide for better torque response after closing the speed loop
+        // Low Kslide responds better to loop transients
+        smo1.Valpha = volt1.Valpha;
+        smo1.Vbeta  = volt1.Vbeta;
+        smo1.Ialpha = clarke1.Alpha;
+        smo1.Ibeta  = clarke1.Beta;
+        smo1.delTheta=delTheta;
+        SMO_MACRO(smo1)
 
+// ------------------------------------------------------------------------------
+//    Connect inputs of the OLFO module and call the OLFO macro
+// ------------------------------------------------------------------------------
+        olfo1.Valpha = volt1.Valpha;
+        olfo1.Vbeta  = volt1.Vbeta;
+        olfo1.Ialpha = clarke1.Alpha;
+        olfo1.Ibeta  = clarke1.Beta;
+        olfo1.delTheta=delTheta;
+        OLFO_MACRO(olfo1)
+
+// ------------------------------------------------------------------------------
+//    Call SMO Function for Theta Estimation
+// ------------------------------------------------------------------------------
+        Valpha = volt1.Valpha;
+        Vbeta  = volt1.Vbeta;
+        Ialpha = clarke1.Alpha;
+        Ibeta  = clarke1.Beta;
+        a=a1;
+        SMO_THETA();
+//	}
+#endif
+
+#if (SELECT_MACHINE == ACIM)
 // ------------------------------------------------------------------------------
 //    Connect inputs of the ACI module and call the speed estimation macro
 // ------------------------------------------------------------------------------
@@ -959,7 +1151,16 @@ void MotorISR(void)
 	se1.PsiQrS = fe1.PsiQrS;
 	se1.ThetaFlux = fe1.ThetaFlux; 
 	ACISE_MACRO(se1)
+#endif
 
+#if (SELECT_MACHINE == PMSM)
+//	if (lsw==1){
+//        speed3.EstimatedTheta = smo1.Theta;
+	    speed3.EstimatedTheta =theta/(2*PI);
+        SE_MACRO(speed3)
+	    speed_estimated= speed3.EstimatedSpeed; // with OLFO- changed 10/07/2024
+//	}
+#endif
 
 // ------------------------------------------------------------------------------
 //  Connect inputs of the SVGEN_DQ module and call the space-vector gen. macro
@@ -987,14 +1188,31 @@ void MotorISR(void)
     ipark2.Cosine = park1.Cosine;
     IPARK_MACRO(ipark2)
 
-    vars1 = clarke1.Alpha;
-    vars2 = ipark2.Alpha;
+//    vars1 = park1.Ds;
+//    vars2 = park1.Qs;
+    vars1=rg1.Out/(2*PI);
+    vars2=theta/(2*PI);
+//    vars2=olfo1.Theta/(2*PI);
 
-    vars3 = clarke1.Beta;   //it generated 1.6A rms current
-    vars4 = ipark2.Beta;
+//    vars1 = clarke1.Alpha;
+//    vars2 = ipark2.Alpha;
+
+//    vars1 = clarke1.Alpha;
+//    vars2 = ipark2.Alpha;
+
+//    vars3 = clarke1.Beta;   //it generated 1.6A rms current
+//    vars4 = ipark2.Beta;
+
+    id = park1.Ds;
+    iq = park1.Qs;
+
+    pi_d = pi_id.Out;//clarke1.Beta;   //it generated 1.6A rms current
+    pi_q = pi_iq.Out;//ipark2.Beta;
 
     vars3 = rg1.Out/(2*PI);
-    vars4 = fe1.ThetaFlux/(2*PI);
+    vars4 = smo1.Theta/(2*PI);
+
+
 
 /*
  	pwm1.MfuncC1 = svgen1.Ta;
@@ -1231,8 +1449,14 @@ void MotorISR(void)
 //  Measure phase currents, subtract the offset and normalize from (-0.5,+0.5) to (-1,+1). 
 //	Connect inputs of the CLARKE module and call the clarke transformation macro
 // ------------------------------------------------------------------------------
-    clarke1.As=sensor_i_L1_fltr; // Phase A curr.
-    clarke1.Bs=sensor_i_L2_fltr; // Phase B curr.
+#if (SELECT_MACHINE == ACIM)
+	clarke1.As=0.0954*sensor_i_L1_fltr; // Phase A curr.
+    clarke1.Bs=0.0954*sensor_i_L2_fltr; // Phase B curr.
+#endif
+#if (SELECT_MACHINE == PMSM)
+    clarke1.As=0.1345*sensor_i_L1_fltr; // Phase A curr.
+    clarke1.Bs=0.1345*sensor_i_L2_fltr; // Phase B curr.
+#endif
 
     CLARKE_MACRO(clarke1)
 
@@ -1242,12 +1466,15 @@ void MotorISR(void)
 
     park1.Alpha = clarke1.Alpha;
     park1.Beta  = clarke1.Beta;
+
+//    park1.Angle = rg1.Out;
 	if(lsw==0) park1.Angle = rg1.Out;
 	else park1.Angle = fe1.ThetaFlux;
 
 #if (SELECT_MACHINE == PMSM)
-	if(lsw==1) park1.Angle = rg1.Out;
-    else park1.Angle = smo1.Theta;
+	if(lsw==0) park1.Angle = rg1.Out;
+//  else park1.Angle = smo1.Theta;
+    else park1.Angle = olfo1.Theta;
 #endif
 
     park1.Sine = sinf(park1.Angle);
@@ -1274,8 +1501,8 @@ void MotorISR(void)
 
 	if(lsw==0)	{pi_spd.ui=0; pi_spd.i1=0;}
 
-	vars33 = pi_spd.Fbk;
-	vars34 = pi_spd.Ref;
+	speed_estimated = pi_spd.Fbk;
+//	vars34 = pi_spd.Ref;
 // ------------------------------------------------------------------------------
 //  Connect inputs of the PI module and call the PI IQ controller macro
 // ------------------------------------------------------------------------------ 
@@ -1300,7 +1527,7 @@ void MotorISR(void)
 //	Connect inputs of the INV_PARK module and call the inverse park trans. macro
 // ------------------------------------------------------------------------------
     ipark1.Ds = pi_id.Out;
-    ipark1.Qs = pi_iq.Out ;
+    ipark1.Qs = pi_iq.Out;
 	ipark1.Sine   = park1.Sine;
     ipark1.Cosine = park1.Cosine;
 	IPARK_MACRO(ipark1)
@@ -1351,6 +1578,17 @@ void MotorISR(void)
     smo1.Valpha = volt1.Valpha;
     smo1.Vbeta  = volt1.Vbeta;
     SMO_MACRO(smo1)
+
+// ------------------------------------------------------------------------------
+//    Connect inputs of the OLFO module and call the OLFO macro
+// ------------------------------------------------------------------------------
+    olfo1.Valpha = volt1.Valpha;
+    olfo1.Vbeta  = volt1.Vbeta;
+    olfo1.Ialpha = clarke1.Alpha;
+    olfo1.Ibeta  = clarke1.Beta;
+    olfo1.delTheta=delTheta;
+    OLFO_MACRO(olfo1)
+    //  }
 #endif
 
 #if (SELECT_MACHINE == ACIM)
@@ -1366,8 +1604,15 @@ void MotorISR(void)
 #endif
 
 #if (SELECT_MACHINE == PMSM)
-    speed3.EstimatedTheta = smo1.Theta;
+//    speed3.EstimatedTheta = smo1.Theta;
+//    SE_MACRO(speed3)
+
+//  if (lsw==1){
+//  speed3.EstimatedTheta = smo1.Theta;
+    speed3.EstimatedTheta =olfo1.Theta/(2*PI);
     SE_MACRO(speed3)
+    speed_estimated= speed3.EstimatedSpeed; // with OLFO- changed 10/07/2024
+//  }
 #endif
 
 // ------------------------------------------------------------------------------
@@ -1396,8 +1641,21 @@ void MotorISR(void)
     ipark2.Cosine = park1.Cosine;
     IPARK_MACRO(ipark2)
 
-    vars1 = clarke1.Alpha;
-    vars2 = ipark2.Alpha;
+//    vars1 = clarke1.Alpha;
+//    vars2 = ipark2.Alpha;
+//
+//    vars1 = park1.Ds;
+//    vars2 = park1.Qs;
+
+    id = park1.Ds;
+    iq = park1.Qs;
+
+    pi_d = pi_id.Out;//clarke1.Beta;   //it generated 1.6A rms current
+    pi_q = pi_iq.Out;//ipark2.Beta;
+
+
+//    vars3 = pi_iq.Ref;
+//    vars4 = park1.Qs;
 
 //    vars1 = SpeedRef;
 //    vars2 = se1.WrHat;
@@ -1557,18 +1815,19 @@ void MotorOperation(void)
     }
     else if (MACHINE_STATE == DEACCELERATION) {
 
-        if (SpeedRef > 0.004) SpeedRef = SpeedRef - 0.0003; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
-        if (SpeedRef < -0.004) SpeedRef = SpeedRef + 0.0003; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+        if (SpeedRef > 0.001) SpeedRef = SpeedRef - 0.00019; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+//        if (SpeedRef < -0.004) SpeedRef = SpeedRef + 0.0003; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
+        if (SpeedRef < 0) SpeedRef = 0; //5sec in 1.5msec SubRoutine to reduce 1500 to 0 rpm
 
 //        if ((float32_t)se1.WrHatRpm < 15.0 ) {
 //            if ((float32_t)se1.WrHatRpm > -15.0 ) {
-        if ((float32_t)SpeedRef < 0.0045 ) {
-            if ((float32_t)SpeedRef > -0.0045 ) {
+        if ((float32_t)SpeedRef < 0.001 ) {
+            if ((float32_t)SpeedRef > -0.001 ) {
                 //    if (!DisablePWM) DisablePWM = SET;
                 setDISABLE_PWM1();
                 EPWM_forceTripZoneEvent(EPWM1_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
                 EPWM_forceTripZoneEvent(EPWM2_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
-                EPWM_forceTripZoneEvent(EPWM8_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
+                EPWM_forceTripZoneEvent(EPWM3_BASE, EPWM_TZ_FORCE_EVENT_OST); //forceOSTPWMTrip
 
                 MotorActiveFlag = 0;
                 MACHINE_STATE = IDLE_STATE;

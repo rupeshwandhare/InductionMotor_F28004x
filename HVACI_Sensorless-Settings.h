@@ -13,12 +13,12 @@ Following is the list of the Build Level choices.
 
 #define ACIM 1
 #define PMSM 2
-#define SELECT_MACHINE ACIM
+#define SELECT_MACHINE PMSM
 
 /*------------------------------------------------------------------------------
 This line sets the BUILDLEVEL to one of the available choices.
 ------------------------------------------------------------------------------*/
-#define   BUILDLEVEL LEVEL3
+#define   BUILDLEVEL LEVEL4
 
 #ifndef TRUE
 #define FALSE 0
@@ -59,20 +59,20 @@ This line sets the BUILDLEVEL to one of the available choices.
 
 #if (SELECT_MACHINE == PMSM)
 // Define the electrical motor parametes (1/4 hp Marathon Motor)
-#define RS      2.8                // Stator resistance (ohm)
+#define RS      1.5                // Stator resistance (ohm)
 #define RR                        // Rotor resistance (ohm)
-#define LS      0.00753           // Stator inductance (H)
+#define LS      0.0067           // Stator inductance (H)
 #define LR                      // Rotor inductance (H)
 #define LM                      // Magnatizing inductance (H)
-#define POLES   2                   // Number of poles
+#define POLES   8                   // Number of poles
 
 
 // Define the base quantites for PU system conversion
 #define BASE_VOLTAGE    540       //340/sqrt(3) Base peak phase voltage (volt)
-#define BASE_CURRENT    14.0          // Base peak phase current (amp)
+#define BASE_CURRENT    14.5          // Base peak phase current (amp)
 #define BASE_TORQUE                 // Base torque (N.m)
 #define BASE_FLUX                   // Base flux linkage (volt.sec/rad)
-#define BASE_FREQ       120         // Base electrical frequency (Hz)
+#define BASE_FREQ       240         // Base electrical frequency (Hz)
                                     // Note that 0.5 pu (1800 rpm) is max for Marathon motor
                                     // Above 1800 rpm, field weakening is needed.
 #endif
@@ -994,7 +994,7 @@ Default initalizer for the SPEED_MEAS_QEP object.
 #endif // __SPEED_FR_H__
 
 
-//***** Additional Micro added as below for PMSM on a top of above micro required for IM ***//
+//***** Additional Macro added as below for PMSM on a top of above macro required for IM ***//
 
        /* =================================================================================
        File name:       SMOPOS.H
@@ -1022,18 +1022,26 @@ Default initalizer for the SPEED_MEAS_QEP object.
                          float32_t  Theta;       // Output: Compensated rotor angle
                          float32_t  E0;          // Parameter: 0.5
                          float32_t  tmp;         //
+                         float32_t  delTheta;    // LUT for Del_Theta ############### added in 09/07/2024
+                         float32_t  EalphaOld;      // Variable: Stationary alfa-axis back EMF (old)- added in 11/07/2024
+                         float32_t  EbetaOld;      // Variable: Stationary beta-axis back EMF (old)- added in 11/07/2024
+                         float32_t  k1;      // Variable: Filter variable- added in 11/07/2024
+                         float32_t  k2;      // Variable: Filter variable- added in 11/07/2024
                         } SMOPOS;
 
        /*-----------------------------------------------------------------------------
        Default initalizer for the SMOPOS object.
        -----------------------------------------------------------------------------*/
        #define SMOPOS_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0, \
-                                  0,0,0,0,0,0,(0.5),0   \
+                                  0,0,0,0,0,0,(0.5),0,0,0,0,0,0\
                                }
+       //0.7285* y(k)+ 0.1358* (u(k) + y(k-1)) wc=2*pi*500 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+                        // added previous output alpha beta EMF variables for filtering- added in 11/07/2024
 
        /*------------------------------------------------------------------------------
        Prototypes for the functions in SMOPOS.C
        ------------------------------------------------------------------------------*/
+
 
        #define SMO_MACRO(v)                                                                                    \
                                                                                                                \
@@ -1053,11 +1061,15 @@ Default initalizer for the SPEED_MEAS_QEP object.
            /*  Sliding control filter -> back EMF calculator   */                                              \
            v.Ealpha = v.Ealpha + (v.Kslf*(v.Zalpha-v.Ealpha));                                           \
            v.Ebeta  = v.Ebeta  + (v.Kslf*(v.Zbeta -v.Ebeta));                                            \
-                                                                                                               \
+           v.Ealpha =v.k1*v.Ealpha + (v.k2*(v.EalphaOld+v.Ealpha));                       \
+           v.Ebeta  = v.k1*v.Ebeta  + (v.k2*(v.EbetaOld+v.Ebeta));                        \
+           v.EalphaOld = v.Ealpha;                                         \
+           v.EbetaOld = v.Ebeta;                                         \
+                                                                                            \
            /*  Rotor angle calculator -> Theta = atan(-Ealpha,Ebeta)   */                                      \
            /*v.Theta = _IQatan2PU(-v.Ealpha,v.Ebeta); */                                                   \
            /* Compute the rotor flux angle*/                                               \
-           v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) ) ;                                     \
+           v.tmp = ( atan2f(-v.Ealpha,v.Ebeta) )+v.delTheta;                                     \
                             if (v.tmp >=0.0)                                                            \
                                 v.Theta = v.tmp;                                                    \
                             else                                                                        \
@@ -1184,3 +1196,70 @@ Default initalizer for the SPEED_MEAS_QEP object.
                                         #endif // __SPEED_EST_H__
 
 
+
+
+
+/* =================================================================================
+      File name:       OLFO.H
+      ==================================================================================*/
+      #ifndef __OLFO_H__
+      #define __OLFO_H__
+
+
+      typedef struct {  float32_t  Valpha;      // Input: Stationary alfa-axis stator voltage
+                        float32_t  Ialpha;      // Input: Stationary alfa-axis stator current
+                        float32_t  Vbeta;       // Input: Stationary beta-axis stator voltage
+                        float32_t  Ibeta;       // Input: Stationary beta-axis stator current
+                        float32_t  Rs;        // Parameter: Per phase stator resistance
+                        float32_t  Ls;        // Parameter: Per phase stator inductance
+                        float32_t  K1;        // Parameter: filter parameter 1
+                        float32_t  K2;        // Parameter: filter parameter 2
+                        float32_t  v1;         // Variable: Back EMF-alpha
+                        float32_t  v2;         // Variable: Back EMF-beta
+                        float32_t  PsiV1;       // Variable: Est. Back EMF-alpha axis Flux
+                        float32_t  PsiV2;       // Variable: Est. Back EMF-alpha axis Flux
+                        float32_t  PsiV1old;       // Variable: Est. Back EMF-alpha axis Flux (old)
+                        float32_t  PsiV2old;       // Variable: Est. Back EMF-alpha axis Flux (old)
+                        float32_t  PsiAlpha;   // Variable: Est. Alpha axis Flux
+                        float32_t  PsiBeta;    // Variable: Est. Beta axis Flux
+                        float32_t  Theta;       // Output: Estimated rotor angle
+                        float32_t  tmp;         // Variable: Estimated rotor angle buffer variable for over/under-flow detection
+                        float32_t  delTheta;    // LUT for Del_Theta ############### added in 10/07/2024
+                       } OLFO;
+
+      /*-----------------------------------------------------------------------------
+      Default initalizer for the SMOPOS object.
+      -----------------------------------------------------------------------------*/
+      #define OLFO_DEFAULTS {  0,0,0,0,0,0,0,0,0,0,0,0,0,0, \
+                                 0,0,0,0,0   \
+                              }
+
+      /*------------------------------------------------------------------------------
+      Prototypes for the functions in SMOPOS.C
+      ------------------------------------------------------------------------------*/
+
+      #define OLFO_MACRO(v)                                                                                    \
+                                                                                                              \
+          /* Back EMF   */                                                              \
+          v.v1 = (v.Valpha-v.Ialpha*v.Rs);                                                                    \
+          v.v2 = (v.Vbeta-v.Ibeta*v.Rs);                                                                      \
+                                                                                                              \
+          /*  Back EMF Flux after integration with small LPF */                                                 \
+          v.PsiV1 = ((v.K1*v.PsiV1old)+(v.K2*v.v1));                                                             \
+          v.PsiV2  = ((v.K1*v.PsiV2old)+(v.K2*v.v2));                                                             \
+                                                                                                              \
+          /* Flux Calculation in alpha beta frame*/                                                         \
+          v.PsiAlpha = v.PsiV1-(v.Ls*v.Ialpha);                                      \
+          v.PsiBeta  = v.PsiV2-(v.Ls*v.Ibeta);                                      \
+                                                                                                            \
+          v.PsiV1old=v.PsiV1;                                                                                \
+          v.PsiV2old=v.PsiV2;                                                                                \
+                                                                                                              \
+          /*  Rotor angle calculator -> Theta = atan(PsiBeta,PsiAlpha)   */                                    \
+          /* Compute the rotor flux angle*/                                               \
+          v.tmp = ( atan2f(v.PsiBeta,v.PsiAlpha) )+v.delTheta;                                     \
+                           if (v.tmp >=0.0)                                                            \
+                               v.Theta = v.tmp;                                                    \
+                           else                                                                        \
+                               v.Theta = v.tmp + 6.283185307;
+      #endif

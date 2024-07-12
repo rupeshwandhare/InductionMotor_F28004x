@@ -153,8 +153,8 @@ extern "C" {
 //#define ADC_VDC_GAIN  ((float32_t)0.0003828925)
 //#define ADC_I_GAIN  ((float32_t)0.000519792)
 
-#define ADC_VDC_GAIN  ((float32_t)0.000424057)
-#define ADC_I_GAIN  ((float32_t)0.0009218266)
+#define ADC_VDC_GAIN ((float32_t)0.2435)//((float32_t)0.000424057)
+#define ADC_I_GAIN  ((float32_t)0.00443) //((float32_t)0.0009218266)
 
 
 #define ADC_TEMP_GAIN  ((float32_t)0.080566)

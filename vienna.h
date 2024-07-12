@@ -1163,10 +1163,12 @@ static inline void Vpv_Control2(void)
     }
 }
 
+//update_const_deacceleration_rate=0.0000105;
 #pragma FUNC_ALWAYS_INLINE(Deacceleration2)
 static inline void Deacceleration2(void)
 {
     common_vars_duty2 = common_vars_duty2-update_const_deacceleration_rate;
+//    common_vars_duty2 = common_vars_duty2-0.0000105;
 
     if (common_vars_duty2 <=0.01) {
         common_vars_duty2 = 0.0;
@@ -1215,11 +1217,11 @@ static inline void Fault_State(void)
 static inline void readCurrVolADCSignals(void)
 {
     VIENNA_iL1Meas_pu = (((float32_t)(VIENNA_IL1_FB_1 + VIENNA_IL1_FB_2 +
-            VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4)) *
-            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL1MeasOffset_pu ) * 1.0f;
+            VIENNA_IL1_FB_3 + VIENNA_IL1_FB_4))* 0.25f - VIENNA_iL1MeasOffset_pu) *
+                    (float32_t)ADC_I_GAIN  * 1.0f;
     VIENNA_iL2Meas_pu = (((float32_t)(VIENNA_IL2_FB_1 + VIENNA_IL2_FB_2 +
-            VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4)) *
-            (float32_t)ADC_I_GAIN * 0.25f - VIENNA_iL2MeasOffset_pu ) * 1.0f;
+            VIENNA_IL2_FB_3 + VIENNA_IL2_FB_4)) * 0.25f - VIENNA_iL2MeasOffset_pu) *
+                    (float32_t)ADC_I_GAIN * 1.0f;
 
 /*
     VIENNA_iPV1Meas_pu = ( ((float32_t)(VIENNA_IPV1_FB_1 + VIENNA_IPV1_FB_2 +
@@ -1274,6 +1276,7 @@ static inline void filter_vdc(void)  //vdc filtering
 static inline void filter_iL1(void)  //vpv filtering
 {
     sensor_i_L1_fltr = 0.2282609* sensor_i_L1_fltr+ 0.3858695* (VIENNA_iL1Meas_pu + sensor_i_L1_prev); //0.2282609,0.3858695 for wc=2*pi*2000 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+//    sensor_i_L1_fltr = 0.7285* sensor_i_L1_fltr+ 0.1358* (VIENNA_iL1Meas_pu + sensor_i_L1_prev); //0.2282609,0.3858695 for wc=2*pi*500 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
     sensor_i_L1_prev = VIENNA_iL1Meas_pu;
 }
 
@@ -1281,6 +1284,7 @@ static inline void filter_iL1(void)  //vpv filtering
 static inline void filter_iL2(void)  //vpv filtering
 {
     sensor_i_L2_fltr = 0.2282609* sensor_i_L2_fltr+ 0.3858695* (VIENNA_iL2Meas_pu + sensor_i_L2_prev); //0.2282609,0.3858695 for wc=2*pi*2000 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
+//    sensor_i_L2_fltr = 0.7285* sensor_i_L2_fltr+ 0.1358* (VIENNA_iL2Meas_pu + sensor_i_L2_prev); //0.2282609,0.3858695 for wc=2*pi*500 with Ts=1/10kHz  k1=(2Tau-Ts)/(2Tau+Ts); k2=Ts/(2Tau+Ts)
     sensor_i_L2_prev = VIENNA_iL2Meas_pu;
 }
 

@@ -25,12 +25,10 @@
 
 #include <hmi.h>
 
-
-
 extern struct LCD_VARS lcd;
 extern struct COMMON_FLAG common_flag;
 extern struct COMMAND command;
-
+float graph[200];
 //
 // Variable declarations for state machine
 //
@@ -150,6 +148,8 @@ void main(void)
     A_Task_Ptr = &A1;
     B_Task_Ptr = &B1;
 
+
+
     // IDLE loop. Just sit and loop forever, periodically will branch into
     // A0-A3, B0-B3, C0-C3 tasks
     // Frequency of this branching is set in setupDevice routine
@@ -175,7 +175,7 @@ void main(void)
 #if VIENNA_CONTROL_RUNNING_ON == C28x_CORE
     interrupt void ISR1(void)
     {
-        MotorISR();
+       MotorISR();
 
         VIENNA_HAL_clearInterrupt(VIENNA_C28x_ISR1_INTERRUPT_PIE_GROUP_NO);
         VIENNA_HAL_clearPWMInterruptFlag(VIENNA_C28x_ISR1_INTERRUPT_TRIG_PWM_BASE);
@@ -261,7 +261,7 @@ void A1(void)   //2*50us=100us (10kHz)
 void A2(void)    //2*50us=100us (10kHz)
 {
 
-//    sw_debug();
+    sw_debug();
 
     //the next time CpuTimer0 'counter' reaches Period value go to A1
     //
@@ -290,9 +290,10 @@ void B1(void)    //3*500usec
 void B2(void)   //3*500usec
 {
 
-    hw_debug();
+//    hw_debug();
 
-    //    VIENNA_HAL_toggleLED();
+
+   //    VIENNA_HAL_toggleLED();
 
     //
     //the next time CpuTimer1 'counter' reaches Period value go to B1
@@ -322,6 +323,7 @@ void B3(void)   //3*500usec
         j=0;
 
         trasmit_vars();
+        SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF);
     }
 
     //

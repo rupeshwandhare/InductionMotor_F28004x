@@ -116,7 +116,8 @@ void InitializeSCI(void)
      // Enable the TXFF and RXFF interrupts.
      //
      SCI_setFIFOInterruptLevel(SCIA_BASE, SCI_FIFO_TX6, SCI_FIFO_RX6);      //for transmitting 6 bytes together to generate interrupt
-     SCI_enableInterrupt(SCIA_BASE, SCI_INT_TXFF | SCI_INT_RXFF);
+     SCI_enableInterrupt(SCIA_BASE, SCI_INT_RXFF);
+     SCI_enableInterrupt(SCIA_BASE, SCI_INT_TXFF);
 
  #ifdef AUTOBAUD
      //
@@ -157,13 +158,16 @@ void InitializeSCI(void)
      //
      // Clear the SCI interrupts before enabling them.
      //
-     SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF | SCI_INT_RXFF);
+     SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_RXFF);
+     SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF);
+
+//     SCI_disableInterrupt(SCIA_BASE, SCI_INT_TXFF);//////
 
      //
      // Enable the interrupts in the PIE: Group 9 interrupts 1 & 2.
      //
      Interrupt_enable(INT_SCIA_RX);
-     Interrupt_enable(INT_SCIA_TX);
+//     Interrupt_enable(INT_SCIA_TX);
      Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 
 }
@@ -186,9 +190,12 @@ sciaTxISR(void)
     SCI_writeCharArray(SCIA_BASE, (uint16_t*)msg, 26);
 
 */
+    trasmit_vars();
     //
     // Acknowledge the PIE interrupt.
     //
+    SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF);
+
     Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 }
 
@@ -259,15 +266,35 @@ void floatToByteArray(Float * fvalue, unsigned char * byteArr, unsigned char ind
 //char transmit_char1[6];
 Uint16 ID_Vars=0;
 volatile float32_t *Ptr_Vars;
-#define NosOfVars 10
+#define NosOfVars 3 //10
 float32_t temp_vars;
 Uint16 Enable_Vars_trasmit_SCIBT=1;
 Uint16 rec_byte[6];
+Uint16 trans_byte[6];
+
+//float float_variable = 1.11;
+//unsigned char bytes_array[4];
+//
+//*((float *)bytes_array) = float_variable;
+
+//typedef union{
+//    float a;
+//    unsigned char bytes[4];
+//  }thing;
+//
+//thing.a = 1.234;
+
+
+
+//floatToBytes(floatValue,*byteArray);
+
 void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop //Transferring 6*8 bits+2bytes gap= 64bits in one run: minimum time=64/9600=6.6msec
 {
+/*
     if (!Enable_Vars_trasmit_SCIBT) { //Enable variable transmit over SCI along with their IDs and ack
         return;
     }
+*/
 
     // Send one variable in one run and increment for next variable.
     if (ID_Vars>NosOfVars) {    //increment and rotation for ID_Vars
@@ -289,17 +316,23 @@ void trasmit_vars(Float *transmitValue) //It should be in 10msec or slower loop 
     // Send bytes; From a float variable to a chars array and append with IDs, commands, etc:
 
     SCI_writeCharBlockingFIFO(SCIA_BASE, (char) 0x08);
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,3));
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,2));
-    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,1));
     SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,0));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,1));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,2));
+    SCI_writeCharBlockingFIFO(SCIA_BASE, __mov_byte((int *)&temp_vars,3));
     SCI_writeCharBlockingFIFO(SCIA_BASE, (char) ID_Vars);      //It may use for acknowledge signal
 
+    trans_byte[0]=(char) ID_Vars;
+    trans_byte[1]=__mov_byte((int *)&temp_vars,0);
+    trans_byte[2]=__mov_byte((int *)&temp_vars,1);
+    trans_byte[3]=__mov_byte((int *)&temp_vars,2);
+    trans_byte[4]=__mov_byte((int *)&temp_vars,3);
+    trans_byte[5]=(char) 0x33;
 
-
-
-
-
+//    SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF);
+    SCI_clearInterruptStatus(SCIA_BASE, SCI_INT_TXFF);
+//
+//    Interrupt_clearACKGroup(INTERRUPT_ACK_GROUP9);
 }
 
 // read floats through SCI
@@ -484,6 +517,11 @@ void Process_SCI_Received_Data(Float * receivedValue){
     }
 }
 
+float v0=10.5;
+float v1=5;
+float v2=10;
+float v3=25.60;
+
 
 
 //For assigning picking up variables for transmit (monitoring) THERE IS BETTER WAY (SHORT CODE) IF USED STRUCTURE
@@ -492,8 +530,18 @@ void pickup_vars(void)
 {
     switch(ID_Vars){
     case 0:
-//        Ptr_Vars = &CONTROL_STATE;
+//            Ptr_Vars = &CONTROL_STATE;
+            Ptr_Vars = &v0;
         break;
+//    case 1:
+//            Ptr_Vars = &v1;
+//            break;
+//    case 2:
+//            Ptr_Vars = &v2;
+//            break;
+//    case 3:
+//            Ptr_Vars = &v3;
+//            break;
     case 1:
         Ptr_Vars = &VIENNA_vDCMeas_pu;
         break;
